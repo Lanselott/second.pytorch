@@ -58,11 +58,12 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
 # pytorch
 # ------------------------------------------------------------------
     $PIP_INSTALL \
-        torch_nightly -f \
-        https://download.pytorch.org/whl/nightly/cu90/torch_nightly.html \
+        torch -f \
+        # https://download.pytorch.org/whl/nightly/cu90/torch_nightly.html \
+        https://download.pytorch.org/whl/torch_stable.html\
         && \
     $PIP_INSTALL \
-        torchvision_nightly \
+        torchvision \
         && \
 # ==================================================================
 # config & cleanup
@@ -83,7 +84,7 @@ RUN tar xzvf boost_1_68_0.tar.gz
 RUN cp -r ./boost_1_68_0/boost /usr/include
 RUN rm -rf ./boost_1_68_0
 RUN rm -rf ./boost_1_68_0.tar.gz
-RUN git clone https://github.com/traveller59/second.pytorch.git --depth 10
+RUN git clone https://github.com/Lanselott/second.pytorch.git --depth 10
 RUN git clone https://github.com/traveller59/SparseConvNet.git --depth 10
 RUN cd ./SparseConvNet && python setup.py install && cd .. && rm -rf SparseConvNet
 ENV NUMBAPRO_CUDA_DRIVER=/usr/lib/x86_64-linux-gnu/libcuda.so
