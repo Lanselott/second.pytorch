@@ -1,0 +1,1 @@
+python ./pytorch/train.py train --config_path=./configs/car.fhd_nvidia.config --model_dir=/results 
