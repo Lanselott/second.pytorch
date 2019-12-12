@@ -15,19 +15,22 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
            /etc/apt/sources.list.d/cuda.list \
            /etc/apt/sources.list.d/nvidia-ml.list && \
     apt-get update && \
+
+
 # ==================================================================
 # tools
 # ------------------------------------------------------------------
     DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
         build-essential \
         ca-certificates \
-        cmake \
         wget \
         git \
         vim \
         fish \
         libsparsehash-dev \
         && \
+
+
 # ==================================================================
 # python
 # ------------------------------------------------------------------
@@ -78,6 +81,18 @@ RUN PIP_INSTALL="python -m pip --no-cache-dir install --upgrade" && \
         shapely fire pybind11 tensorboardX protobuf \
         scikit-image numba pillow
 
+WORKDIR /tmp/cmake
+RUN wget https://cmake.org/files/v3.14/cmake-3.14.0.tar.gz && \
+    tar -xzvf cmake-3.14.0.tar.gz > /dev/null
+
+WORKDIR cmake-3.14.0
+RUN ./bootstrap > /dev/null && \
+    make -j$(nproc --all) > /dev/null && \
+    make install > /dev/null
+
+WORKDIR /
+RUN rm -rf /tmp/cmake
+
 WORKDIR /root
 RUN wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
 RUN tar xzvf boost_1_68_0.tar.gz
@@ -85,8 +100,10 @@ RUN cp -r ./boost_1_68_0/boost /usr/include
 RUN rm -rf ./boost_1_68_0
 RUN rm -rf ./boost_1_68_0.tar.gz
 RUN git clone https://github.com/Lanselott/second.pytorch.git --depth 10
-RUN git clone https://github.com/traveller59/SparseConvNet.git --depth 10
-RUN cd ./SparseConvNet && python setup.py install && cd .. && rm -rf SparseConvNet
+# RUN git clone https://github.com/traveller59/SparseConvNet.git --depth 10
+# RUN cd ./SparseConvNet && python setup.py install && cd .. && rm -rf SparseConvNet
+RUN git clone https://github.com/traveller59/spconv.git --recursive
+# RUN cd ./spconv && python setup.py bdist_wheel &&  cd ./dist && pip install *.whl
 ENV NUMBAPRO_CUDA_DRIVER=/usr/lib/x86_64-linux-gnu/libcuda.so
 ENV NUMBAPRO_NVVM=/usr/local/cuda/nvvm/lib64/libnvvm.so
 ENV NUMBAPRO_LIBDEVICE=/usr/local/cuda/nvvm/libdevice
