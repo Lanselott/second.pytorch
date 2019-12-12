@@ -1,1 +1,1 @@
-python ./pytorch/train.py train --config_path=./configs/car.fhd_nvidia_4gpu.config --model_dir=./work/car_kitti_4gpu/ --multi_gpu=True
+CUDA_VISIBLE_DEVICES=0,1,2,3 python ./pytorch/train.py train --config_path=./configs/car.fhd_nvidia_4gpu.config --model_dir=./work/car_kitti_4gpu/ --multi_gpu=True
