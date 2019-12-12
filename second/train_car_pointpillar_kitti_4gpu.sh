@@ -1,0 +1,1 @@
+python ./pytorch/train.py train --config_path=./configs/pointpillars/car/xyres_20_nivdia_4gpu.config --model_dir=/results/car_pointpillar_kitti4gpu 
