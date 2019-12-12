@@ -60,6 +60,7 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         numpy \
         scipy \
         matplotlib \
+        opencv-python \
         Cython \
         psutil \
         seaborn \ 
