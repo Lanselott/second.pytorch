@@ -43,6 +43,11 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         python3.6 \
         python3.6-dev \
         && \
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \    
+        libsm6 \
+        libxext6 \
+        libxrender1 \
+        && \
     wget -O ~/get-pip.py \
         https://bootstrap.pypa.io/get-pip.py && \
     python3.6 ~/get-pip.py && \
@@ -56,6 +61,8 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         scipy \
         matplotlib \
         Cython \
+        psutil \
+        seaborn \ 
         && \
 # ==================================================================
 # pytorch
