@@ -260,10 +260,11 @@ def train(config_path,
         training=False,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner)
+
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=input_cfg.batch_size * num_gpu,
-        shuffle=True,
+        shuffle=False,
         num_workers=input_cfg.preprocess.num_workers * num_gpu,
         pin_memory=False,
         collate_fn=collate_fn,
@@ -296,6 +297,7 @@ def train(config_path,
         while True:
             if clear_metrics_every_epoch:
                 net.clear_metrics()
+            embed()
             for example in dataloader:
                 lr_scheduler.step(net.get_global_step())
                 time_metrics = example["metrics"]

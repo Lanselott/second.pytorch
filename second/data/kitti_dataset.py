@@ -12,6 +12,8 @@ from second.utils.eval import get_coco_eval_result, get_official_eval_result
 from second.data.dataset import Dataset, register_dataset
 from second.utils.progress_bar import progress_bar_iter as prog_bar
 
+from IPython import embed
+
 @register_dataset
 class KittiDataset(Dataset):
     NumPointFeatures = 4
@@ -299,6 +301,10 @@ def _read_imageset_file(path):
         lines = f.readlines()
     return [int(line) for line in lines]
 
+def _read_tracking_imageset_file(path):
+    with open(path, 'r') as f:
+        lines = f.readlines()
+    return [line for line in lines]
 
 def _calculate_num_points_in_gt(data_path,
                                 infos,
@@ -394,6 +400,65 @@ def create_kitti_info_file(data_path, save_path=None, relative_path=True):
     with open(filename, 'wb') as f:
         pickle.dump(kitti_infos_test, f)
 
+def create_kitti_tracking_info_file(data_path, save_path=None, relative_path=True):
+    imageset_folder = Path(__file__).resolve().parent / "ImageSets"
+    train_img_ids = _read_tracking_imageset_file(str(imageset_folder / "tracking_training_info_v4.txt"))
+    val_img_ids = _read_tracking_imageset_file(str(imageset_folder / "tracking_val_info_v4.txt"))
+    # NO test set from kitti tracking
+    # test_img_ids = _read_imageset_file(str(imageset_folder / "test_tracking.txt"))
+    print("Number of kitti tracking training data:{}".format(len(train_img_ids)))
+    print("Number of kitti tracking val data:{}".format(len(val_img_ids)))
+
+    print("Generate info. this may take several minutes.")
+    if save_path is None:
+        save_path = Path(data_path)
+    else:
+        save_path = Path(save_path)
+    kitti_infos_train = kitti.get_kitti_image_info(
+        data_path,
+        training=True,
+        tracking=True,
+        velodyne=True,
+        calib=True,
+        num_worker=1, # debug only
+        image_ids=train_img_ids,
+        relative_path=relative_path)
+    embed()
+    _calculate_num_points_in_gt(data_path, kitti_infos_train, relative_path)
+    filename = save_path / 'kitti_infos_train.pkl'
+    print(f"Kitti info train file is saved to {filename}")
+    with open(filename, 'wb') as f:
+        pickle.dump(kitti_infos_train, f)
+    kitti_infos_val = kitti.get_kitti_image_info(
+        data_path,
+        training=True,
+        tracking=True,
+        velodyne=True,
+        calib=True,
+        image_ids=val_img_ids,
+        relative_path=relative_path)
+    _calculate_num_points_in_gt(data_path, kitti_infos_val, relative_path)
+    filename = save_path / 'kitti_infos_val.pkl'
+    print(f"Kitti info val file is saved to {filename}")
+    with open(filename, 'wb') as f:
+        pickle.dump(kitti_infos_val, f)
+    filename = save_path / 'kitti_infos_trainval.pkl'
+    print(f"Kitti info trainval file is saved to {filename}")
+    with open(filename, 'wb') as f:
+        pickle.dump(kitti_infos_train + kitti_infos_val, f)
+    
+    # kitti_infos_test = kitti.get_kitti_image_info(
+    #     data_path,
+    #     training=False,
+    #     label_info=False,
+    #     velodyne=True,
+    #     calib=True,
+    #     image_ids=test_img_ids,
+    #     relative_path=relative_path)
+    # filename = save_path / 'kitti_infos_test.pkl'
+    # print(f"Kitti info test file is saved to {filename}")
+    with open(filename, 'wb') as f:
+        pickle.dump(kitti_infos_test, f)
 
 def _create_reduced_point_cloud(data_path,
                                 info_path,

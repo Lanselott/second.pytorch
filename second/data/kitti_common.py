@@ -8,6 +8,7 @@ from collections import OrderedDict
 import numpy as np
 from skimage import io
 
+from IPython import embed
 
 def area(boxes, add1=False):
     """Computes area of boxes.
@@ -84,9 +85,17 @@ def get_kitti_info_path(idx,
                         info_type='image_2',
                         file_tail='.png',
                         training=True,
+                        tracking=False,
                         relative_path=True,
                         exist_check=True):
-    img_idx_str = get_image_index_str(idx)
+    '''
+    Kitti tracking: 00XX/00XXXX
+    Kitti detection: 00XXXX
+    '''
+    if not tracking:
+        img_idx_str = get_image_index_str(idx)
+    else:
+        img_idx_str = idx
     img_idx_str += file_tail
     prefix = pathlib.Path(prefix)
     if training:
@@ -100,21 +109,20 @@ def get_kitti_info_path(idx,
     else:
         return str(prefix / file_path)
 
-
-def get_image_path(idx, prefix, training=True, relative_path=True, exist_check=True):
-    return get_kitti_info_path(idx, prefix, 'image_2', '.png', training,
+def get_image_path(idx, prefix, training=True, tracking=False, relative_path=True, exist_check=True):
+    return get_kitti_info_path(idx, prefix, 'image_2', '.png', training, tracking,
                                relative_path, exist_check)
 
-def get_label_path(idx, prefix, training=True, relative_path=True, exist_check=True):
-    return get_kitti_info_path(idx, prefix, 'label_2', '.txt', training,
+def get_label_path(idx, prefix, training=True, tracking=False, relative_path=True, exist_check=True):
+    return get_kitti_info_path(idx, prefix, 'label_2', '.txt', training, tracking,
                                relative_path, exist_check)
 
-def get_velodyne_path(idx, prefix, training=True, relative_path=True, exist_check=True):
-    return get_kitti_info_path(idx, prefix, 'velodyne', '.bin', training,
+def get_velodyne_path(idx, prefix, training=True, tracking=False, relative_path=True, exist_check=True):
+    return get_kitti_info_path(idx, prefix, 'velodyne', '.bin', training, tracking,
                                relative_path, exist_check)
 
-def get_calib_path(idx, prefix, training=True, relative_path=True, exist_check=True):
-    return get_kitti_info_path(idx, prefix, 'calib', '.txt', training,
+def get_calib_path(idx, prefix, training=True, tracking=False, relative_path=True, exist_check=True):
+    return get_kitti_info_path(idx, prefix, 'calib', '.txt', training, tracking,
                                relative_path, exist_check)
 
 def _extend_matrix(mat):
@@ -153,6 +161,7 @@ def _check_kitti_directory(root_path):
 
 def get_kitti_image_info(path,
                          training=True,
+                         tracking=False,
                          label_info=True,
                          velodyne=False,
                          calib=False,
@@ -193,18 +202,20 @@ def get_kitti_image_info(path,
     root_path = pathlib.Path(path)
     if not isinstance(image_ids, list):
         image_ids = list(range(image_ids))
+    
+    if tracking:
+        image_ids = [image_id[-16:-5] for image_id in image_ids] # trans abs path to inds
 
     def map_func(idx):
         info = {}
         pc_info = {'num_features': 4}
         calib_info = {}
-
         image_info = {'image_idx': idx}
         annotations = None
         if velodyne:
             pc_info['velodyne_path'] = get_velodyne_path(
-                idx, path, training, relative_path)
-        image_info['image_path'] = get_image_path(idx, path, training,
+                idx, path, training, tracking, relative_path)
+        image_info['image_path'] = get_image_path(idx, path, training, tracking,
                                                 relative_path)
         if with_imageshape:
             img_path = image_info['image_path']
@@ -213,7 +224,7 @@ def get_kitti_image_info(path,
             image_info['image_shape'] = np.array(
                 io.imread(img_path).shape[:2], dtype=np.int32)
         if label_info:
-            label_path = get_label_path(idx, path, training, relative_path)
+            label_path = get_label_path(idx, path, training, tracking, relative_path)
             if relative_path:
                 label_path = str(root_path / label_path)
             annotations = get_label_anno(label_path)
@@ -221,7 +232,7 @@ def get_kitti_image_info(path,
         info["point_cloud"] = pc_info
         if calib:
             calib_path = get_calib_path(
-                idx, path, training, relative_path=False)
+                idx, path, training, tracking, relative_path=False)
             with open(calib_path, 'r') as f:
                 lines = f.readlines()
             P0 = np.array(

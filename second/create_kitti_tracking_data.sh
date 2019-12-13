@@ -1,0 +1,1 @@
+python create_data.py kitti_tracking_data_prep --root_path='/research/byu2/rchen/data/kitti_tracking/'
