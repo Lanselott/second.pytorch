@@ -10,6 +10,7 @@ from second.core import box_np_ops
 from second.core import preprocess as prep
 from second.utils.check import shape_mergeable
 
+from IPython import embed
 
 class DataBaseSamplerV2:
     def __init__(self,
@@ -17,7 +18,8 @@ class DataBaseSamplerV2:
                  groups,
                  db_prepor=None,
                  rate=1.0,
-                 global_rot_range=None):
+                 global_rot_range=None,
+                 tracking=False):
         for k, v in db_infos.items():
             print(f"load {len(v)} {k} database infos")
 
@@ -77,7 +79,7 @@ class DataBaseSamplerV2:
 
         self._sampler_dict = {}
         for k, v in self._group_db_infos.items():
-            self._sampler_dict[k] = prep.BatchSampler(v, k)
+            self._sampler_dict[k] = prep.BatchSampler(v, k, tracking=tracking)
         self._enable_global_rot = False
         if global_rot_range is not None:
             if not isinstance(global_rot_range, (list, tuple, np.ndarray)):
@@ -99,7 +101,8 @@ class DataBaseSamplerV2:
                    num_point_features,
                    random_crop=False,
                    gt_group_ids=None,
-                   calib=None):
+                   calib=None,
+                   tracking=False):
         sampled_num_dict = {}
         sample_num_per_class = []
         for class_name, max_sample_num in zip(self._sample_classes,
@@ -133,8 +136,11 @@ class DataBaseSamplerV2:
                                                     avoid_coll_boxes,
                                                     total_group_ids)
                 else:
+                    '''
+                    We should keep samples same in tracking 
+                    '''
                     sampled_cls = self.sample_class_v2(class_name, sampled_num,
-                                                       avoid_coll_boxes)
+                                                       avoid_coll_boxes, tracking)
 
                 sampled += sampled_cls
                 if len(sampled_cls) > 0:
@@ -235,7 +241,7 @@ class DataBaseSamplerV2:
             ret = self._sampler_dict[name].sample(num)
             return ret, np.ones((len(ret), ), dtype=np.int64)
 
-    def sample_class_v2(self, name, num, gt_boxes):
+    def sample_class_v2(self, name, num, gt_boxes, tracking=False):
         sampled = self._sampler_dict[name].sample(num)
         sampled = copy.deepcopy(sampled)
         num_gt = gt_boxes.shape[0]

@@ -423,7 +423,6 @@ def create_kitti_tracking_info_file(data_path, save_path=None, relative_path=Tru
         num_worker=1, # debug only
         image_ids=train_img_ids,
         relative_path=relative_path)
-    embed()
     _calculate_num_points_in_gt(data_path, kitti_infos_train, relative_path)
     filename = save_path / 'kitti_infos_train.pkl'
     print(f"Kitti info train file is saved to {filename}")
@@ -457,12 +456,13 @@ def create_kitti_tracking_info_file(data_path, save_path=None, relative_path=Tru
     #     relative_path=relative_path)
     # filename = save_path / 'kitti_infos_test.pkl'
     # print(f"Kitti info test file is saved to {filename}")
-    with open(filename, 'wb') as f:
-        pickle.dump(kitti_infos_test, f)
+    # with open(filename, 'wb') as f:
+    #     pickle.dump(kitti_infos_test, f)
 
 def _create_reduced_point_cloud(data_path,
                                 info_path,
                                 save_path=None,
+                                tracking=False,
                                 back=False):
     with open(info_path, 'rb') as f:
         kitti_infos = pickle.load(f)
@@ -487,13 +487,21 @@ def _create_reduced_point_cloud(data_path,
         points_v = box_np_ops.remove_outside_points(points_v, rect, Trv2c, P2,
                                                     image_info["image_shape"])
         if save_path is None:
-            save_filename = v_path.parent.parent / (
-                v_path.parent.stem + "_reduced") / v_path.name
+            if tracking:
+                # tracking index is 00XX/XXXXX, not XXXXX as detection
+                save_filename = v_path.parent.parent.parent / (
+                    v_path.parent.parent.stem + "_reduced") / v_path.parent.stem / v_path.name
+            else:
+                save_filename = v_path.parent.parent / (
+                    v_path.parent.stem + "_reduced") / v_path.name
             # save_filename = str(v_path) + '_reduced'
             if back:
                 save_filename += "_back"
         else:
-            save_filename = str(Path(save_path) / v_path.name)
+            if tracking:
+                save_filename = str(Path(save_path) / v_path.name)
+            else:
+                save_filename = str(Path(save_path) / v_path.name)
             if back:
                 save_filename += "_back"
         with open(save_filename, 'w') as f:
@@ -505,6 +513,7 @@ def create_reduced_point_cloud(data_path,
                                val_info_path=None,
                                test_info_path=None,
                                save_path=None,
+                               tracking=False,
                                with_back=False):
     if train_info_path is None:
         train_info_path = Path(data_path) / 'kitti_infos_train.pkl'
@@ -513,16 +522,21 @@ def create_reduced_point_cloud(data_path,
     if test_info_path is None:
         test_info_path = Path(data_path) / 'kitti_infos_test.pkl'
 
-    _create_reduced_point_cloud(data_path, train_info_path, save_path)
-    _create_reduced_point_cloud(data_path, val_info_path, save_path)
-    _create_reduced_point_cloud(data_path, test_info_path, save_path)
+    _create_reduced_point_cloud(data_path, train_info_path, save_path, tracking)
+    _create_reduced_point_cloud(data_path, val_info_path, save_path, tracking)
+    
+    if not tracking:
+        _create_reduced_point_cloud(data_path, test_info_path, save_path, tracking)
+    
     if with_back:
         _create_reduced_point_cloud(
-            data_path, train_info_path, save_path, back=True)
+            data_path, train_info_path, save_path, tracking, back=True)
         _create_reduced_point_cloud(
-            data_path, val_info_path, save_path, back=True)
-        _create_reduced_point_cloud(
-            data_path, test_info_path, save_path, back=True)
+            data_path, val_info_path, save_path, tracking, back=True)
+        
+        if not tracking:
+            _create_reduced_point_cloud(
+                data_path, test_info_path, save_path, tracking, back=True)
 
 
 if __name__ == "__main__":

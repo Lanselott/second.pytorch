@@ -21,7 +21,7 @@ Note: If users wishes to also use their own InputReaders with the Object
 Detection configuration framework, they should define their own builder function
 that wraps the build function.
 """
-
+from IPython import embed
 from second.protos import input_reader_pb2
 from second.data.dataset import get_dataset_class
 from second.data.preprocess import prep_pointcloud
@@ -36,6 +36,7 @@ def build(input_reader_config,
           training,
           voxel_generator,
           target_assigner,
+          tracking=False,
           multi_gpu=False):
     """Builds a tensor dictionary based on the InputReader config.
 
@@ -61,7 +62,7 @@ def build(input_reader_config,
     db_sampler_cfg = prep_cfg.database_sampler
     db_sampler = None
     if len(db_sampler_cfg.sample_groups) > 0 or db_sampler_cfg.database_info_path != "":  # enable sample
-        db_sampler = dbsampler_builder.build(db_sampler_cfg)
+        db_sampler = dbsampler_builder.build(db_sampler_cfg, tracking=tracking)
     grid_size = voxel_generator.grid_size
     feature_map_size = grid_size[:2] // out_size_factor
     feature_map_size = [*feature_map_size, 1][::-1]
@@ -75,6 +76,7 @@ def build(input_reader_config,
         root_path=dataset_cfg.kitti_root_path,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
+        tracking=tracking,
         training=training,
         max_voxels=prep_cfg.max_number_of_voxels,
         remove_outside_points=False,
@@ -102,7 +104,6 @@ def build(input_reader_config,
         random_flip_x=prep_cfg.random_flip_x,
         random_flip_y=prep_cfg.random_flip_y,
         sample_importance=prep_cfg.sample_importance)
-
     ret = target_assigner.generate_anchors(feature_map_size)
     class_names = target_assigner.classes
     anchors_dict = target_assigner.generate_anchors_dict(feature_map_size)
@@ -131,5 +132,4 @@ def build(input_reader_config,
         root_path=dataset_cfg.kitti_root_path,
         class_names=class_names,
         prep_func=prep_func)
-
     return dataset

@@ -27,6 +27,7 @@ from torch.utils.data import Dataset
 from second.builder import dataset_builder
 from second.protos import input_reader_pb2
 
+from IPython import embed
 
 class DatasetWrapper(Dataset):
     """ convert our dataset to Dataset class in pytorch.
@@ -51,6 +52,7 @@ def build(input_reader_config,
           training,
           voxel_generator,
           target_assigner=None,
+          tracking=False,
           multi_gpu=False) -> DatasetWrapper:
     """Builds a tensor dictionary based on the InputReader config.
 
@@ -73,6 +75,7 @@ def build(input_reader_config,
         training,
         voxel_generator,
         target_assigner,
+        tracking=tracking,
         multi_gpu=multi_gpu)
     dataset = DatasetWrapper(dataset)
     return dataset

@@ -13,6 +13,8 @@ from second.core.geometry import (is_line_segment_intersection_jit,
                                   points_in_convex_polygon_jit)
 import copy
 
+from IPython import embed
+
 
 class BatchSampler:
     def __init__(self,
@@ -20,7 +22,8 @@ class BatchSampler:
                  name=None,
                  epoch=None,
                  shuffle=True,
-                 drop_reminder=False):
+                 drop_reminder=False, 
+                 tracking=False):
         self._sampled_list = sampled_list
         self._indices = np.arange(len(sampled_list))
         if shuffle:
@@ -32,14 +35,20 @@ class BatchSampler:
         self._epoch = epoch
         self._epoch_counter = 0
         self._drop_reminder = drop_reminder
+        self._sample_counter = 0
+        self._rand_seed = np.random.randint(2**32 - 1)
+        self.tracking=tracking
 
     def _sample(self, num):
         if self._idx + num >= self._example_num:
             ret = self._indices[self._idx:].copy()
             self._reset()
         else:
+            if self.tracking and self._sample_counter % 2 == 0:
+                self._idx += num
+                self._rand_seed = np.random.randint(2**32 - 1)
             ret = self._indices[self._idx:self._idx + num]
-            self._idx += num
+        self._sample_counter += 1
         return ret
 
     def _reset(self):

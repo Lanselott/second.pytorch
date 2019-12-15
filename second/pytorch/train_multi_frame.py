@@ -253,13 +253,15 @@ def train(config_path,
         training=True,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
+        tracking=True,
         multi_gpu=multi_gpu)
     eval_dataset = input_reader_builder.build(
         eval_input_cfg,
         model_cfg,
         training=False,
         voxel_generator=voxel_generator,
-        target_assigner=target_assigner)
+        target_assigner=target_assigner,
+        tracking=True)
 
     dataloader = torch.utils.data.DataLoader(
         dataset,
@@ -277,7 +279,6 @@ def train(config_path,
         num_workers=eval_input_cfg.preprocess.num_workers,
         pin_memory=False,
         collate_fn=merge_second_batch)
-
     ######################
     # TRAINING
     ######################
@@ -297,8 +298,24 @@ def train(config_path,
         while True:
             if clear_metrics_every_epoch:
                 net.clear_metrics()
-            embed()
             for example in dataloader:
+                # # '''
+                # # check sampler works correct
+                # # '''
+                # image1 = example['labels'][0].reshape(2, 200, 176)
+                # image2 = example['labels'][1].reshape(2, 200, 176)
+                # image1 = np.where(image1 < 0, 0, image1)
+                # image2 = np.where(image2 < 0, 0, image2)
+                
+                # image1 = image1[0] + image1[1]
+                # image2 = image2[0] + image2[1]
+
+                # import imageio
+                # imageio.imwrite("image1.png", image1)
+                # imageio.imwrite('image2.png', image2)
+                # print("pair done")
+                # embed()
+                # # done
                 lr_scheduler.step(net.get_global_step())
                 time_metrics = example["metrics"]
                 example.pop("metrics")
@@ -488,7 +505,8 @@ def evaluate(config_path,
         model_cfg,
         training=False,
         voxel_generator=voxel_generator,
-        target_assigner=target_assigner)
+        target_assigner=target_assigner,
+        tracking=True)
     eval_dataloader = torch.utils.data.DataLoader(
         eval_dataset,
         batch_size=batch_size,
@@ -580,6 +598,7 @@ def helper_tune_target_assigner(config_path, target_rate=None, update_freq=200, 
         training=True,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
+        tracking=True,
         multi_gpu=False)
 
     dataloader = torch.utils.data.DataLoader(
@@ -662,5 +681,4 @@ def mcnms_parameters_search(config_path,
     pass
 
 
-if __name__ == '__main__':
-    fire.Fire()
+if __name__ =

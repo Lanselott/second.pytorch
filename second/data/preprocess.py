@@ -18,6 +18,8 @@ from second.utils.timer import simple_timer
 import seaborn as sns
 import matplotlib.pyplot as plt 
 
+from IPython import embed
+
 def merge_second_batch(batch_list):
     example_merged = defaultdict(list)
     for example in batch_list:
@@ -95,11 +97,14 @@ def _dict_select(dict_, inds):
         else:
             dict_[k] = v[inds]
 
+seed_list = [None]
+frame_count = [0]
 
 def prep_pointcloud(input_dict,
                     root_path,
                     voxel_generator,
                     target_assigner,
+                    tracking=False,
                     db_sampler=None,
                     max_voxels=20000,
                     remove_outside_points=False,
@@ -136,6 +141,24 @@ def prep_pointcloud(input_dict,
     input_dict format: dataset.get_sensor_data format
 
     """
+    '''
+    Setting seed for tracking, 
+    make sure the sample/rotation is equal in two neighbor frames
+    '''
+    update_seed = frame_count[0] % 2
+    
+    if tracking and update_seed:
+        seed = seed_list[0]
+        seed_list[0] = np.random.randint(2**32 - 1)
+        frame_count[0] = 0
+    elif tracking and not update_seed:
+        seed = seed_list[0]
+        
+        if seed is None:
+            seed = np.random.randint(2**32 - 1)
+            seed_list[0] = seed
+        frame_count[0] = 1
+
     t = time.time()
     class_names = target_assigner.classes
     points = input_dict["lidar"]["points"]
@@ -212,6 +235,7 @@ def prep_pointcloud(input_dict,
             if "group_ids" in gt_dict:
                 group_ids = gt_dict["group_ids"]
 
+            np.random.seed(seed)
             sampled_dict = db_sampler.sample_all(
                 root_path,
                 gt_dict["gt_boxes"],
@@ -219,8 +243,8 @@ def prep_pointcloud(input_dict,
                 num_point_features,
                 random_crop,
                 gt_group_ids=group_ids,
-                calib=calib)
-
+                calib=calib,
+                tracking=tracking)
             if sampled_dict is not None:
                 sampled_gt_names = sampled_dict["gt_names"]
                 sampled_gt_boxes = sampled_dict["gt_boxes"]
@@ -251,7 +275,7 @@ def prep_pointcloud(input_dict,
         group_ids = None
         if "group_ids" in gt_dict:
             group_ids = gt_dict["group_ids"]
-
+        np.random.seed(seed)
         prep.noise_per_object_v3_(
             gt_dict["gt_boxes"],
             points,
@@ -261,7 +285,6 @@ def prep_pointcloud(input_dict,
             global_random_rot_range=global_random_rot_range,
             group_ids=group_ids,
             num_try=100)
-
         # should remove unrelated objects after noise per object
         # for k, v in gt_dict.items():
         #     print(k, v.shape)
@@ -270,12 +293,14 @@ def prep_pointcloud(input_dict,
             [class_names.index(n) + 1 for n in gt_dict["gt_names"]],
             dtype=np.int32)
         gt_dict["gt_classes"] = gt_classes
+        np.random.seed(seed)
         gt_dict["gt_boxes"], points = prep.random_flip(gt_dict["gt_boxes"],
                                                        points, 0.5, random_flip_x, random_flip_y)
         gt_dict["gt_boxes"], points = prep.global_rotation_v2(
             gt_dict["gt_boxes"], points, *global_rotation_noise)
         gt_dict["gt_boxes"], points = prep.global_scaling_v2(
             gt_dict["gt_boxes"], points, *global_scaling_noise)
+        np.random.seed(seed)
         prep.global_translate_(gt_dict["gt_boxes"], points, global_translate_noise_std)
         bv_range = voxel_generator.point_cloud_range[[0, 1, 3, 4]]
         mask = prep.filter_gt_box_outside_range_by_center(gt_dict["gt_boxes"], bv_range)

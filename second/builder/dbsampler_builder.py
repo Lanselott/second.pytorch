@@ -6,7 +6,7 @@ from second.core.preprocess import DataBasePreprocessor
 from second.core.sample_ops import DataBaseSamplerV2
 
 
-def build(sampler_config):
+def build(sampler_config, tracking=False):
     cfg = sampler_config
     groups = list(cfg.sample_groups)
     prepors = [
@@ -23,5 +23,5 @@ def build(sampler_config):
     grot_range = list(grot_range)
     if len(grot_range) == 0:
         grot_range = None
-    sampler = DataBaseSamplerV2(db_infos, groups, db_prepor, rate, grot_range)
+    sampler = DataBaseSamplerV2(db_infos, groups, db_prepor, rate, grot_range, tracking=tracking)
     return sampler
