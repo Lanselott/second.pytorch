@@ -35,7 +35,7 @@ class BatchSampler:
         self._epoch = epoch
         self._epoch_counter = 0
         self._drop_reminder = drop_reminder
-        self._sample_counter = 0
+        self._sample_counter = 1 # first frame
         self._rand_seed = np.random.randint(2**32 - 1)
         self.tracking=tracking
 
@@ -46,7 +46,6 @@ class BatchSampler:
         else:
             if self.tracking and self._sample_counter % 2 == 0:
                 self._idx += num
-                self._rand_seed = np.random.randint(2**32 - 1)
             ret = self._indices[self._idx:self._idx + num]
         self._sample_counter += 1
         return ret
@@ -58,7 +57,7 @@ class BatchSampler:
             np.random.shuffle(self._indices)
         self._idx = 0
 
-    def sample(self, num):
+    def sample(self, num):        
         indices = self._sample(num)
         return [self._sampled_list[i] for i in indices]
         # return np.random.choice(self._sampled_list, num)

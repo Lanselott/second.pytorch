@@ -20,7 +20,47 @@ import matplotlib.pyplot as plt
 
 from IPython import embed
 
-def merge_second_batch(batch_list):
+def merge_second_batch(batch_list, tracking=False):
+    example_merged = defaultdict(list)
+    for example in batch_list:
+        for k, v in example.items():
+            example_merged[k].append(v)
+    ret = {}
+    for key, elems in example_merged.items():
+        if key in [
+                'voxels', 'num_points', 'num_gt', 'voxel_labels', 'gt_names', 'gt_classes', 'gt_boxes'
+        ]:
+            ret[key] = np.concatenate(elems, axis=0)
+        elif key == 'metadata':
+            ret[key] = elems
+        elif key == "calib":
+            ret[key] = {}
+            for elem in elems:
+                for k1, v1 in elem.items():
+                    if k1 not in ret[key]:
+                        ret[key][k1] = [v1]
+                    else:
+                        ret[key][k1].append(v1)
+            for k1, v1 in ret[key].items():
+                ret[key][k1] = np.stack(v1, axis=0)
+        elif key == 'coordinates':
+            coors = []
+            for i, coor in enumerate(elems):
+                coor_pad = np.pad(
+                    coor, ((0, 0), (1, 0)), mode='constant', constant_values=i)
+                coors.append(coor_pad)
+            ret[key] = np.concatenate(coors, axis=0)
+        elif key == 'metrics':
+            ret[key] = elems
+        else:
+            ret[key] = np.stack(elems, axis=0)
+    return ret
+
+def merge_tracking_second_batch(batch_list, tracking=True):
+    if batch_list[0]['metadata']['image_idx'][-1] == '0' and len(batch_list) > 1:
+        print("First frame ,merge itelf")
+        batch_list[1] = batch_list[0] 
+
     example_merged = defaultdict(list)
     for example in batch_list:
         for k, v in example.items():
@@ -98,7 +138,7 @@ def _dict_select(dict_, inds):
             dict_[k] = v[inds]
 
 seed_list = [None]
-frame_count = [0]
+frame_count = [1]
 
 def prep_pointcloud(input_dict,
                     root_path,
@@ -145,20 +185,21 @@ def prep_pointcloud(input_dict,
     Setting seed for tracking, 
     make sure the sample/rotation is equal in two neighbor frames
     '''
+    # if input_dict['metadata']['image_idx'][-1] == '0':
+    #     frame_count[0] = 1 # clean up
+
     update_seed = frame_count[0] % 2
-    
     if tracking and update_seed:
         seed = seed_list[0]
         seed_list[0] = np.random.randint(2**32 - 1)
-        frame_count[0] = 0
     elif tracking and not update_seed:
         seed = seed_list[0]
-        
         if seed is None:
             seed = np.random.randint(2**32 - 1)
             seed_list[0] = seed
-        frame_count[0] = 1
 
+    frame_count[0] += 1
+    print("seed:", seed)
     t = time.time()
     class_names = target_assigner.classes
     points = input_dict["lidar"]["points"]
@@ -296,8 +337,10 @@ def prep_pointcloud(input_dict,
         np.random.seed(seed)
         gt_dict["gt_boxes"], points = prep.random_flip(gt_dict["gt_boxes"],
                                                        points, 0.5, random_flip_x, random_flip_y)
+        np.random.seed(seed)
         gt_dict["gt_boxes"], points = prep.global_rotation_v2(
             gt_dict["gt_boxes"], points, *global_rotation_noise)
+        np.random.seed(seed)
         gt_dict["gt_boxes"], points = prep.global_scaling_v2(
             gt_dict["gt_boxes"], points, *global_scaling_noise)
         np.random.seed(seed)
@@ -316,6 +359,7 @@ def prep_pointcloud(input_dict,
         # cv2.waitKey(0)
     if shuffle_points:
         # shuffle is a little slow.
+        np.random.seed(seed)
         np.random.shuffle(points)
 
     # [0, -40, -3, 70.4, 40, 1]
@@ -428,6 +472,7 @@ def prep_pointcloud(input_dict,
         example.update({
             'labels': targets_dict['labels'],
             'reg_targets': targets_dict['bbox_targets'],
+            'gt_boxes': gt_dict["gt_boxes"],
             # 'reg_weights': targets_dict['bbox_outside_weights'],
             'importance': targets_dict['importance'],
         })

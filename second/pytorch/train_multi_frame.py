@@ -15,7 +15,7 @@ import second.data.kitti_common as kitti
 import torchplus
 from second.builder import target_assigner_builder, voxel_builder
 from second.core import box_np_ops
-from second.data.preprocess import merge_second_batch, merge_second_batch_multigpu
+from second.data.preprocess import merge_tracking_second_batch, merge_second_batch_multigpu
 from second.protos import pipeline_pb2
 from second.pytorch.builder import (box_coder_builder, input_reader_builder,
                                     lr_scheduler_builder, optimizer_builder,
@@ -25,6 +25,7 @@ from second.utils.progress_bar import ProgressBar
 import psutil
 
 from IPython import embed
+from frames_op import handle_frames
 
 def example_convert_to_torch(example, dtype=torch.float32,
                              device=None) -> dict:
@@ -241,7 +242,7 @@ def train(config_path,
         print(f"MULTI-GPU: use {num_gpu} gpu")
         collate_fn = merge_second_batch_multigpu
     else:
-        collate_fn = merge_second_batch
+        collate_fn = merge_tracking_second_batch
         num_gpu = 1
 
     ######################
@@ -278,7 +279,7 @@ def train(config_path,
         shuffle=False,
         num_workers=eval_input_cfg.preprocess.num_workers,
         pin_memory=False,
-        collate_fn=merge_second_batch)
+        collate_fn=merge_tracking_second_batch)
     ######################
     # TRAINING
     ######################
@@ -298,28 +299,46 @@ def train(config_path,
         while True:
             if clear_metrics_every_epoch:
                 net.clear_metrics()
+            data_iterator = iter(dataloader)
+            example_2 = next(data_iterator)
+
             for example in dataloader:
+                if example['metadata'][0]['image_idx'] == '0001/000000': # first of scene
+                    example_2 = example
+                    duplicate_example_2 = next(data_iterator)
+                else:
+                    example_2 = next(data_iterator)
+                # # scene_list = []
                 # # '''
                 # # check sampler works correct
                 # # '''
                 # image1 = example['labels'][0].reshape(2, 200, 176)
-                # image2 = example['labels'][1].reshape(2, 200, 176)
+                # image2 = example_2['labels'][0].reshape(2, 200, 176)
                 # image1 = np.where(image1 < 0, 0, image1)
                 # image2 = np.where(image2 < 0, 0, image2)
-                
+
                 # image1 = image1[0] + image1[1]
                 # image2 = image2[0] + image2[1]
 
                 # import imageio
-                # imageio.imwrite("image1.png", image1)
-                # imageio.imwrite('image2.png', image2)
+                # imageio.imwrite("previous_frame.png", image1)
+                # imageio.imwrite('current_frame.png', image2)
                 # print("pair done")
-                # embed()
-                # # done
+                # done
+                # Consider two frames. If the scene change, we should not merge these two
+                if example['metadata'][0]['image_idx'][:4] != example_2['metadata'][0]['image_idx'][:4]: continue
+                
+                '''
+                TODO: Handle correlation. warp masks, ...
+                '''
+                embed()
+                example, example_2 = handle_frames(example, example_2)
                 lr_scheduler.step(net.get_global_step())
                 time_metrics = example["metrics"]
                 example.pop("metrics")
                 example_torch = example_convert_to_torch(example, float_dtype)
+                example_2_torch = example_convert_to_torch(example_2, float_dtype)
+                embed()
 
                 batch_size = example["anchors"].shape[0]
 
@@ -435,6 +454,7 @@ def train(config_path,
                 step += 1
                 if step >= total_step:
                     break
+                
             if step >= total_step:
                 break
     except Exception as e:
@@ -513,7 +533,7 @@ def evaluate(config_path,
         shuffle=False,
         num_workers=input_cfg.preprocess.num_workers,
         pin_memory=False,
-        collate_fn=merge_second_batch)
+        collate_fn=merge_tracking_second_batch)
 
     if train_cfg.enable_mixed_precision:
         float_dtype = torch.float16
@@ -607,7 +627,7 @@ def helper_tune_target_assigner(config_path, target_rate=None, update_freq=200, 
         shuffle=False,
         num_workers=0,
         pin_memory=False,
-        collate_fn=merge_second_batch,
+        collate_fn=merge_tracking_second_batch,
         worker_init_fn=_worker_init_fn,
         drop_last=False)
     
@@ -681,4 +701,5 @@ def mcnms_parameters_search(config_path,
     pass
 
 
-if __name__ =
+if __name__ == '__main__':
+    fire.Fire()
