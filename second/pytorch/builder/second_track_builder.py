@@ -17,10 +17,9 @@
 
 from second.protos import second_pb2
 from second.pytorch.builder import losses_builder
-from second.pytorch.models.voxelnet import LossNormType, get_voxelnet_class
+from second.pytorch.models.voxelnet_track import LossNormType, get_voxelnet_class
 
 from IPython import embed
-
 def build(model_cfg: second_pb2.VoxelNet, voxel_generator,
           target_assigner, measure_time=False):
     """build second pytorch instance.
@@ -110,6 +109,9 @@ def build(model_cfg: second_pb2.VoxelNet, voxel_generator,
         encode_background_as_zeros=model_cfg.encode_background_as_zeros,
         use_direction_classifier=model_cfg.use_direction_classifier,
         num_input_features=num_input_features,
+        corr_patch_size=model_cfg.rpn.corr_patch_size,
+        corr_kernel_size=model_cfg.rpn.corr_kernel_size,
+        corr_dilation_patch=model_cfg.rpn.corr_dilation_patch,
         num_groups=model_cfg.rpn.num_groups,
         use_groupnorm=model_cfg.rpn.use_groupnorm,
         with_distance=vfe_with_distance,
@@ -132,4 +134,5 @@ def build(model_cfg: second_pb2.VoxelNet, voxel_generator,
         num_direction_bins=model_cfg.num_direction_bins,
         direction_limit_offset=model_cfg.direction_limit_offset,
     )
+
     return net

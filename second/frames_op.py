@@ -1,7 +1,10 @@
 from IPython import embed
+
 from second.core import region_similarity
 import numpy as np
 import draw_tools
+import torch
+
 def handle_frames(previous_frame, current_frame):
     # prev_img_name = previous_frame['metadata'][0]['image_idx']
     # curr_img_name = current_frame['metadata'][0]['image_idx']
@@ -122,3 +125,37 @@ def handle_frames(previous_frame, current_frame):
     # draw_tools.draw_boxes(prev_gt_boxes, 'prev_img')
     # draw_tools.draw_boxes(curr_gt_boxes, 'curr_img')
     return previous_frame, current_frame
+
+def get_response_offset(corr_response, 
+                        offset_mask,
+                        patch_size, 
+                        kernel_size=3, 
+                        voting_range=6, 
+                        dilation_patch=1):
+    n, patch_size, _, h, w= corr_response.shape
+    shift = patch_size // 2
+
+    corr_response = corr_response.reshape(n, patch_size * patch_size, h, w)
+    offset_mask = offset_mask.reshape(n, h, w, -1).permute(0, 3, 1, 2).contiguous()
+    response_sum = torch.zeros([n, patch_size * patch_size, h, w], device=corr_response.device)
+    delta_map = torch.zeros([n, 2, h, w],device=corr_response.device)
+    
+    for i in range(-voting_range, voting_range + 1):
+        for j in range(-voting_range,voting_range + 1):
+            response_sum[:, :, max(0, 0+i):min(h, h+i), max(0, 0+j):min(w, w+j)] += \
+            corr_response[:, :, max(0, 0-i):min(h, h-i), max(0, 0-j):min(w, w-j)] 
+
+    '''get argmax of channel response'''
+    argmax_response_map = response_sum.max(1)[1] # [n, h, w]
+    delta_y = argmax_response_map // patch_size - shift
+    pos_offset_x = argmax_response_map % patch_size # [n, h, w]
+    neg_offset_x = -(argmax_response_map % -patch_size) # [n, h, w]
+    delta_x = torch.where(argmax_response_map > 0, pos_offset_x, neg_offset_x)  - shift# [n, h, w]
+    delta_map[:,1] = delta_x * dilation_patch
+    delta_map[:,0] = delta_y * dilation_patch
+
+    masked_offset_map = delta_map * offset_mask
+    # np.savetxt("argmax_response_map.csv", argmax_response_map.reshape(h, w).cpu().numpy())
+    # import imageio
+    # imageio.imwrite("argmax_response.png", argmax_response_map.reshape(h, w).cpu().numpy())
+    return masked_offset_map

@@ -199,7 +199,7 @@ def prep_pointcloud(input_dict,
             seed_list[0] = seed
 
     frame_count[0] += 1
-    print("seed:", seed)
+    # print("seed:", seed)
     t = time.time()
     class_names = target_assigner.classes
     points = input_dict["lidar"]["points"]

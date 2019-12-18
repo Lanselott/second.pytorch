@@ -9,6 +9,15 @@ from torchvision.models import resnet
 from torchplus.nn import Empty, GroupNorm, Sequential
 from torchplus.tools import change_default_args
 
+'''
+Correlation Module
+Reference: https://github.com/ClementPinard/Pytorch-Correlation-extension
+'''
+from spatial_correlation_sampler import SpatialCorrelationSampler
+from frames_op import get_response_offset
+from resample2d import Resample2d
+
+from IPython import embed
 REGISTERED_RPN_CLASSES = {}
 
 def register_rpn(cls, name=None):
@@ -216,6 +225,9 @@ class RPNNoHeadBase(nn.Module):
                  num_groups=32,
                  box_code_size=7,
                  num_direction_bins=2,
+                 corr_patch_size=9,
+                 corr_kernel_size=3,
+                 corr_dilation_patch=1,
                  name='rpn'):
         """upsample_strides support float: [0.25, 0.5, 1]
         if upsample_strides < 1, conv2d will be used instead of convtranspose2d.
@@ -419,6 +431,143 @@ class RPNBase(RPNNoHeadBase):
             ret_dict["dir_cls_preds"] = dir_cls_preds
         return ret_dict
 
+class RPNBase_tracking(RPNNoHeadBase):
+    def __init__(self,
+                 use_norm=True,
+                 num_class=2,
+                 layer_nums=(3, 5, 5),
+                 layer_strides=(2, 2, 2),
+                 num_filters=(128, 128, 256),
+                 upsample_strides=(1, 2, 4),
+                 num_upsample_filters=(256, 256, 256),
+                 num_input_features=128,
+                 num_anchor_per_loc=2,
+                 encode_background_as_zeros=True,
+                 use_direction_classifier=True,
+                 use_groupnorm=False,
+                 num_groups=32,
+                 box_code_size=7,
+                 num_direction_bins=2,
+                 corr_patch_size=9,
+                 corr_kernel_size=3,
+                 corr_dilation_patch=1,
+                 name='rpn'):
+        """upsample_strides support float: [0.25, 0.5, 1]
+        if upsample_strides < 1, conv2d will be used instead of convtranspose2d.
+        """
+        super(RPNBase_tracking, self).__init__(
+            use_norm=use_norm,
+            num_class=num_class,
+            layer_nums=layer_nums,
+            layer_strides=layer_strides,
+            num_filters=num_filters,
+            upsample_strides=upsample_strides,
+            num_upsample_filters=num_upsample_filters,
+            num_input_features=num_input_features,
+            num_anchor_per_loc=num_anchor_per_loc,
+            encode_background_as_zeros=encode_background_as_zeros,
+            use_direction_classifier=use_direction_classifier,
+            use_groupnorm=use_groupnorm,
+            num_groups=num_groups,
+            box_code_size=box_code_size,
+            num_direction_bins=num_direction_bins,
+            corr_patch_size=corr_patch_size,
+            corr_kernel_size=corr_kernel_size,
+            corr_dilation_patch=corr_dilation_patch,
+            name=name)
+        self._num_anchor_per_loc = num_anchor_per_loc
+        self._num_direction_bins = num_direction_bins
+        self._num_class = num_class
+        self._use_direction_classifier = use_direction_classifier
+        self._box_code_size = box_code_size
+        self._corr_patch_size = corr_patch_size
+        self._corr_kernel_size = corr_kernel_size
+        self._corr_dilation_patch = corr_dilation_patch
+
+        if encode_background_as_zeros:
+            num_cls = num_anchor_per_loc * num_class
+        else:
+            num_cls = num_anchor_per_loc * (num_class + 1)
+        if len(num_upsample_filters) == 0:
+            final_num_filters = self._num_out_filters
+        else:
+            final_num_filters = sum(num_upsample_filters) 
+        self.conv_cls = nn.Conv2d(final_num_filters * 2, num_cls, 1)
+        self.conv_box = nn.Conv2d(final_num_filters * 2,
+                                  num_anchor_per_loc * box_code_size, 1)
+        if use_direction_classifier:
+            self.conv_dir_cls = nn.Conv2d(
+                final_num_filters * 2, num_anchor_per_loc * num_direction_bins, 1)
+        '''
+        - Output sizes oH and oW are no longer dependant of patch size, but only of kernel size and padding
+        - Patch size patch_size is now the whole patch, and not only the radii.
+        - stride1 is now stride
+        - stride2 is dilation_patch, which behave like dilated convolutions
+        - equivalent max_displacement is then dilation_patch * (patch_size - 1) / 2.
+        '''
+        self.correlation_sampler = SpatialCorrelationSampler(
+            kernel_size=self._corr_kernel_size,
+            patch_size=self._corr_patch_size,
+            stride=1,
+            padding=1 + self._corr_kernel_size // 3,
+            dilation_patch=self._corr_dilation_patch)
+        self.resample = Resample2d()
+        
+    def forward(self, xs, examples):
+        res_list = []
+        
+        for x in xs:
+            res_list.append(super().forward(x))
+        '''
+        Algorithm here
+        '''
+        current_offset_mask = examples[1]['offset_masks']
+        previous_out = res_list[0]['out']
+        current_out = res_list[1]['out']
+        t = time.time()
+        corr_response = self.correlation_sampler(current_out, previous_out)
+        offset_map = get_response_offset(corr_response, 
+                            offset_mask=current_offset_mask, 
+                            patch_size=self._corr_patch_size, 
+                            kernel_size=self._corr_kernel_size, 
+                            voting_range=1, 
+                            dilation_patch=self._corr_dilation_patch)
+        print("corr time:{}".format(time.time() - t))
+        warped_previous_out = self.resample(previous_out, offset_map)
+
+        x = res_list[1]["out"] # Current frame
+        x = torch.cat([x, warped_previous_out], dim=1)
+        box_preds = self.conv_box(x)
+        cls_preds = self.conv_cls(x)
+        # ''' test '''
+        # n, c, h ,w = x.shape
+        # import imageio
+        # imageio.imwrite("current_frame_features.png", x[0, :int(c/2)].sum(0).detach().reshape(h, w).cpu().numpy())
+        # imageio.imwrite("warped_current_frame_features.png", x[0, int(c/2):].sum(0).detach().reshape(h, w).cpu().numpy())
+        # imageio.imwrite("offset_map.png", offset_map[0].sum(0).detach().cpu().numpy())
+        # [N, C, y(H), x(W)]
+        C, H, W = box_preds.shape[1:]
+        box_preds = box_preds.view(-1, self._num_anchor_per_loc,
+                                   self._box_code_size, H, W).permute(
+                                       0, 1, 3, 4, 2).contiguous()
+        cls_preds = cls_preds.view(-1, self._num_anchor_per_loc,
+                                   self._num_class, H, W).permute(
+                                       0, 1, 3, 4, 2).contiguous()
+        # box_preds = box_preds.permute(0, 2, 3, 1).contiguous()
+        # cls_preds = cls_preds.permute(0, 2, 3, 1).contiguous()
+
+        ret_dict = {
+            "box_preds": box_preds,
+            "cls_preds": cls_preds,
+        }
+        if self._use_direction_classifier:
+            dir_cls_preds = self.conv_dir_cls(x)
+            dir_cls_preds = dir_cls_preds.view(
+                -1, self._num_anchor_per_loc, self._num_direction_bins, H,
+                W).permute(0, 1, 3, 4, 2).contiguous()
+            # dir_cls_preds = dir_cls_preds.permute(0, 2, 3, 1).contiguous()
+            ret_dict["dir_cls_preds"] = dir_cls_preds
+        return ret_dict
 
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
@@ -466,6 +615,38 @@ class ResNetRPN(RPNBase):
 
 @register_rpn
 class RPNV2(RPNBase):
+    def _make_layer(self, inplanes, planes, num_blocks, stride=1):
+        if self._use_norm:
+            if self._use_groupnorm:
+                BatchNorm2d = change_default_args(
+                    num_groups=self._num_groups, eps=1e-3)(GroupNorm)
+            else:
+                BatchNorm2d = change_default_args(
+                    eps=1e-3, momentum=0.01)(nn.BatchNorm2d)
+            Conv2d = change_default_args(bias=False)(nn.Conv2d)
+            ConvTranspose2d = change_default_args(bias=False)(
+                nn.ConvTranspose2d)
+        else:
+            BatchNorm2d = Empty
+            Conv2d = change_default_args(bias=True)(nn.Conv2d)
+            ConvTranspose2d = change_default_args(bias=True)(
+                nn.ConvTranspose2d)
+
+        block = Sequential(
+            nn.ZeroPad2d(1),
+            Conv2d(inplanes, planes, 3, stride=stride),
+            BatchNorm2d(planes),
+            nn.ReLU(),
+        )
+        for j in range(num_blocks):
+            block.add(Conv2d(planes, planes, 3, padding=1))
+            block.add(BatchNorm2d(planes))
+            block.add(nn.ReLU())
+
+        return block, planes
+
+@register_rpn
+class RPNV2_tracking(RPNBase_tracking):
     def _make_layer(self, inplanes, planes, num_blocks, stride=1):
         if self._use_norm:
             if self._use_groupnorm:

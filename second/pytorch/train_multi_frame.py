@@ -19,7 +19,7 @@ from second.data.preprocess import merge_tracking_second_batch, merge_second_bat
 from second.protos import pipeline_pb2
 from second.pytorch.builder import (box_coder_builder, input_reader_builder,
                                     lr_scheduler_builder, optimizer_builder,
-                                    second_builder)
+                                    second_track_builder)
 from second.utils.log_tool import SimpleModelLog
 from second.utils.progress_bar import ProgressBar
 import psutil
@@ -32,7 +32,7 @@ def example_convert_to_torch(example, dtype=torch.float32,
     device = device or torch.device("cuda:0")
     example_torch = {}
     float_names = [
-        "voxels", "anchors", "reg_targets", "reg_weights", "bev_map", "importance"
+        "voxels", "anchors", "reg_targets", "reg_weights", "bev_map", "importance", "offset_masks"
     ]
     for k, v in example.items():
         if k in float_names:
@@ -66,7 +66,7 @@ def build_network(model_cfg, measure_time=False):
     target_assigner = target_assigner_builder.build(target_assigner_cfg,
                                                     bv_range, box_coder)
     box_coder.custom_ndim = target_assigner._anchor_generators[0].custom_ndim
-    net = second_builder.build(
+    net = second_track_builder.build(
         model_cfg, voxel_generator, target_assigner, measure_time=measure_time)
     return net
 
@@ -331,18 +331,17 @@ def train(config_path,
                 '''
                 TODO: Handle correlation. warp masks, ...
                 '''
-                embed()
                 example, example_2 = handle_frames(example, example_2)
                 lr_scheduler.step(net.get_global_step())
                 time_metrics = example["metrics"]
                 example.pop("metrics")
                 example_torch = example_convert_to_torch(example, float_dtype)
                 example_2_torch = example_convert_to_torch(example_2, float_dtype)
-                embed()
-
                 batch_size = example["anchors"].shape[0]
 
-                ret_dict = net_parallel(example_torch)
+                ret_dict = net_parallel([example_torch, example_2_torch])
+                # ret_dict = net_parallel(example_torch)
+
                 cls_preds = ret_dict["cls_preds"]
                 loss = ret_dict["loss"].mean()
                 cls_loss_reduced = ret_dict["cls_loss_reduced"].mean()
