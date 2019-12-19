@@ -524,7 +524,7 @@ class RPNBase_tracking(RPNNoHeadBase):
         current_offset_mask = examples[1]['offset_masks']
         previous_out = res_list[0]['out']
         current_out = res_list[1]['out']
-        t = time.time()
+        # t = time.time()
         corr_response = self.correlation_sampler(current_out, previous_out)
         offset_map = get_response_offset(corr_response, 
                             offset_mask=current_offset_mask, 
@@ -532,7 +532,7 @@ class RPNBase_tracking(RPNNoHeadBase):
                             kernel_size=self._corr_kernel_size, 
                             voting_range=1, 
                             dilation_patch=self._corr_dilation_patch)
-        print("corr time:{}".format(time.time() - t))
+        # print("corr time:{}".format(time.time() - t))
         warped_previous_out = self.resample(previous_out, offset_map)
 
         x = res_list[1]["out"] # Current frame
