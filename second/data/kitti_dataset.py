@@ -420,7 +420,7 @@ def create_kitti_tracking_info_file(data_path, save_path=None, relative_path=Tru
         tracking=True,
         velodyne=True,
         calib=True,
-        num_worker=1, # debug only
+        num_worker=8, # debug only
         image_ids=train_img_ids,
         relative_path=relative_path)
     _calculate_num_points_in_gt(data_path, kitti_infos_train, relative_path)
