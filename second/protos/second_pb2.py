@@ -13,10 +13,10 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from second.protos import losses_pb2 as losses__pb2
-from second.protos import box_coder_pb2 as box__coder__pb2
-from second.protos import target_pb2 as target__pb2
-from second.protos import voxel_generator_pb2 as voxel__generator__pb2
+import losses_pb2 as losses__pb2
+import box_coder_pb2 as box__coder__pb2
+import target_pb2 as target__pb2
+import voxel_generator_pb2 as voxel__generator__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(

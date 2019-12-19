@@ -1,14 +1,14 @@
 syntax = "proto3";
 
 package second.protos;
-import "second/protos/losses.proto";
-import "second/protos/box_coder.proto";
-import "second/protos/target.proto";
-import "second/protos/voxel_generator.proto";
-// import "losses.proto";
-// import "box_coder.proto";
-// import "target.proto";
-// import "voxel_generator.proto";
+// import "second/protos/losses.proto";
+// import "second/protos/box_coder.proto";
+// import "second/protos/target.proto";
+// import "second/protos/voxel_generator.proto";
+import "losses.proto";
+import "box_coder.proto";
+import "target.proto";
+import "voxel_generator.proto";
 
 
 message VoxelNet {
