@@ -65,6 +65,7 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         psutil \
         seaborn \ 
         ipython \
+        spatial_correlation_sampler \
         && \
 # ==================================================================
 # pytorch
