@@ -64,6 +64,7 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         Cython \
         psutil \
         seaborn \ 
+        ipython \
         && \
 # ==================================================================
 # pytorch

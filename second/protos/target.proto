@@ -1,8 +1,8 @@
 syntax = "proto3";
 
 package second.protos;
-import "anchors.proto";
-import "similarity.proto";
+import "second/protos/anchors.proto";
+import "second/protos/similarity.proto";
 
 message ClassSetting {
   oneof anchor_generator {
