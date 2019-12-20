@@ -1,0 +1,1 @@
+python ./pytorch/train_multi_frame.py train --config_path=./configs/car.fhd_kitti_tracking_nvidia_1gpu_9313.config --model_dir=/results/car_kitti_tracking_1gpu_super_converge --resume=True
