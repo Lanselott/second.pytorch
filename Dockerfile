@@ -65,7 +65,6 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         psutil \
         seaborn \ 
         ipython \
-        spatial_correlation_sampler \
         && \
 # ==================================================================
 # pytorch
@@ -77,6 +76,7 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
     $PIP_INSTALL \
         torchvision \
+        spatial_correlation_sampler \ 
         && \
 # ==================================================================
 # config & cleanup
@@ -113,14 +113,17 @@ RUN git clone https://github.com/Lanselott/second.pytorch.git --depth 10
 # RUN git clone https://github.com/traveller59/SparseConvNet.git --depth 10
 # RUN cd ./SparseConvNet && python setup.py install && cd .. && rm -rf SparseConvNet
 RUN git clone https://github.com/traveller59/spconv.git --recursive
+RUN git clone https://github.com/NVIDIA/flownet2-pytorch.git && cd flownet2-pytorch && bash install.sh
 # RUN cd ./spconv && python setup.py bdist_wheel &&  cd ./dist && pip install *.whl
 ENV NUMBAPRO_CUDA_DRIVER=/usr/lib/x86_64-linux-gnu/libcuda.so
 ENV NUMBAPRO_NVVM=/usr/local/cuda/nvvm/lib64/libnvvm.so
 ENV NUMBAPRO_LIBDEVICE=/usr/local/cuda/nvvm/libdevice
 ENV PYTHONPATH=/root/second.pytorch
+ENV PYTHONPATH=$PYTHONPATH:/root/second.pytorch/second
+ENV PYTHONPATH=$PYTHONPATH:/root/flownet2-pytorch/networks/resample2d_package
 
 VOLUME ["/root/data"]
 VOLUME ["/root/model"]
 WORKDIR /root/second.pytorch/second
-
+RUN ln -s ../../../lansechen-intern/dataset/kitti_tracking/ ./ 
 ENTRYPOINT ["fish"]
