@@ -228,6 +228,7 @@ class RPNNoHeadBase(nn.Module):
                  corr_patch_size=9,
                  corr_kernel_size=3,
                  corr_dilation_patch=1,
+                 voting_range=1,
                  name='rpn'):
         """upsample_strides support float: [0.25, 0.5, 1]
         if upsample_strides < 1, conv2d will be used instead of convtranspose2d.
@@ -451,6 +452,7 @@ class RPNBase_tracking(RPNNoHeadBase):
                  corr_patch_size=9,
                  corr_kernel_size=3,
                  corr_dilation_patch=1,
+                 voting_range=1,
                  name='rpn'):
         """upsample_strides support float: [0.25, 0.5, 1]
         if upsample_strides < 1, conv2d will be used instead of convtranspose2d.
@@ -474,6 +476,7 @@ class RPNBase_tracking(RPNNoHeadBase):
             corr_patch_size=corr_patch_size,
             corr_kernel_size=corr_kernel_size,
             corr_dilation_patch=corr_dilation_patch,
+            voting_range=voting_range,
             name=name)
         self._num_anchor_per_loc = num_anchor_per_loc
         self._num_direction_bins = num_direction_bins
@@ -483,6 +486,7 @@ class RPNBase_tracking(RPNNoHeadBase):
         self._corr_patch_size = corr_patch_size
         self._corr_kernel_size = corr_kernel_size
         self._corr_dilation_patch = corr_dilation_patch
+        self._voting_range = voting_range
 
         if encode_background_as_zeros:
             num_cls = num_anchor_per_loc * num_class
@@ -509,7 +513,8 @@ class RPNBase_tracking(RPNNoHeadBase):
             kernel_size=self._corr_kernel_size,
             patch_size=self._corr_patch_size,
             stride=1,
-            padding=1 + self._corr_kernel_size // 3,
+            # padding=1 + self._corr_kernel_size // 3,
+            padding=1,
             dilation_patch=self._corr_dilation_patch)
         self.resample = Resample2d()
         
@@ -530,11 +535,10 @@ class RPNBase_tracking(RPNNoHeadBase):
                             offset_mask=current_offset_mask, 
                             patch_size=self._corr_patch_size, 
                             kernel_size=self._corr_kernel_size, 
-                            voting_range=1, 
+                            voting_range=self._voting_range, 
                             dilation_patch=self._corr_dilation_patch)
         # print("corr time:{}".format(time.time() - t))
         warped_previous_out = self.resample(previous_out, offset_map)
-
         x = res_list[1]["out"] # Current frame
         x = torch.cat([x, warped_previous_out], dim=1)
         box_preds = self.conv_box(x)

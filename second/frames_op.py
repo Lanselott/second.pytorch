@@ -139,7 +139,7 @@ def get_response_offset(corr_response,
     offset_mask = offset_mask.reshape(n, h, w, -1).permute(0, 3, 1, 2).contiguous()
     response_sum = torch.zeros([n, patch_size * patch_size, h, w], device=corr_response.device)
     delta_map = torch.zeros([n, 2, h, w],device=corr_response.device)
-    
+
     for i in range(-voting_range, voting_range + 1):
         for j in range(-voting_range,voting_range + 1):
             response_sum[:, :, max(0, 0+i):min(h, h+i), max(0, 0+j):min(w, w+j)] += \

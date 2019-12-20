@@ -1,1 +1,1 @@
-protoc -I=./second/protos/ --python_out=./second/protos/ ./second/protos/second.proto
+protoc -I=./ --python_out=./ ./second/protos/second.proto

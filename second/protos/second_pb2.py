@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='second.protos',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1asecond/protos/second.proto\x12\rsecond.protos\x1a\x1asecond/protos/losses.proto\x1a\x1dsecond/protos/box_coder.proto\x1a\x1asecond/protos/target.proto\x1a#second/protos/voxel_generator.proto\"\xd5\x0c\n\x08VoxelNet\x12\x1a\n\x12network_class_name\x18\x01 \x01(\t\x12\x36\n\x0fvoxel_generator\x18\x02 \x01(\x0b\x32\x1d.second.protos.VoxelGenerator\x12N\n\x17voxel_feature_extractor\x18\x03 \x01(\x0b\x32-.second.protos.VoxelNet.VoxelFeatureExtractor\x12P\n\x18middle_feature_extractor\x18\x04 \x01(\x0b\x32..second.protos.VoxelNet.MiddleFeatureExtractor\x12(\n\x03rpn\x18\x05 \x01(\x0b\x32\x1b.second.protos.VoxelNet.RPN\x12\x1a\n\x12num_point_features\x18\x06 \x01(\r\x12\x19\n\x11use_sigmoid_score\x18\x07 \x01(\x08\x12!\n\x04loss\x18\x08 \x01(\x0b\x32\x13.second.protos.Loss\x12\x1f\n\x17\x65ncode_rad_error_by_sin\x18\t \x01(\x08\x12\"\n\x1a\x65ncode_background_as_zeros\x18\n \x01(\x08\x12 \n\x18use_direction_classifier\x18\x0b \x01(\x08\x12\x1d\n\x15\x64irection_loss_weight\x18\x0c \x01(\x02\x12\x18\n\x10pos_class_weight\x18\r \x01(\x02\x12\x18\n\x10neg_class_weight\x18\x0e \x01(\x02\x12<\n\x0eloss_norm_type\x18\x0f \x01(\x0e\x32$.second.protos.VoxelNet.LossNormType\x12*\n\tbox_coder\x18\x10 \x01(\x0b\x32\x17.second.protos.BoxCoder\x12\x36\n\x0ftarget_assigner\x18\x11 \x01(\x0b\x32\x1d.second.protos.TargetAssigner\x12\x1f\n\x17post_center_limit_range\x18\x12 \x03(\x02\x12\x18\n\x10\x64irection_offset\x18\x13 \x01(\x02\x12\x18\n\x10sin_error_factor\x18\x14 \x01(\x02\x12\x1a\n\x12nms_class_agnostic\x18\x15 \x01(\x08\x12\x1a\n\x12num_direction_bins\x18\x16 \x01(\x03\x12\x1e\n\x16\x64irection_limit_offset\x18\x17 \x01(\x02\x12\x13\n\x0blidar_input\x18\x18 \x01(\x08\x1az\n\x15VoxelFeatureExtractor\x12\x19\n\x11module_class_name\x18\x01 \x01(\t\x12\x13\n\x0bnum_filters\x18\x02 \x03(\x05\x12\x15\n\rwith_distance\x18\x03 \x01(\x08\x12\x1a\n\x12num_input_features\x18\x04 \x01(\x05\x1a\xa0\x01\n\x16MiddleFeatureExtractor\x12\x19\n\x11module_class_name\x18\x01 \x01(\t\x12\x19\n\x11num_filters_down1\x18\x02 \x03(\x05\x12\x19\n\x11num_filters_down2\x18\x03 \x03(\x05\x12\x1a\n\x12num_input_features\x18\x04 \x01(\x05\x12\x19\n\x11\x64ownsample_factor\x18\x05 \x01(\x05\x1a\xaf\x02\n\x03RPN\x12\x19\n\x11module_class_name\x18\x01 \x01(\t\x12\x12\n\nlayer_nums\x18\x02 \x03(\x05\x12\x15\n\rlayer_strides\x18\x03 \x03(\x05\x12\x13\n\x0bnum_filters\x18\x04 \x03(\x05\x12\x18\n\x10upsample_strides\x18\x05 \x03(\x01\x12\x1c\n\x14num_upsample_filters\x18\x06 \x03(\x05\x12\x15\n\ruse_groupnorm\x18\x07 \x01(\x08\x12\x12\n\nnum_groups\x18\x08 \x01(\x05\x12\x1a\n\x12num_input_features\x18\t \x01(\x05\x12\x17\n\x0f\x63orr_patch_size\x18\n \x01(\x05\x12\x18\n\x10\x63orr_kernel_size\x18\x0b \x01(\x05\x12\x1b\n\x13\x63orr_dilation_patch\x18\x0c \x01(\x05\"`\n\x0cLossNormType\x12\x15\n\x11NormByNumExamples\x10\x00\x12\x16\n\x12NormByNumPositives\x10\x01\x12\x13\n\x0fNormByNumPosNeg\x10\x02\x12\x0c\n\x08\x44ontNorm\x10\x03\x62\x06proto3')
+  serialized_pb=_b('\n\x1asecond/protos/second.proto\x12\rsecond.protos\x1a\x1asecond/protos/losses.proto\x1a\x1dsecond/protos/box_coder.proto\x1a\x1asecond/protos/target.proto\x1a#second/protos/voxel_generator.proto\"\xeb\x0c\n\x08VoxelNet\x12\x1a\n\x12network_class_name\x18\x01 \x01(\t\x12\x36\n\x0fvoxel_generator\x18\x02 \x01(\x0b\x32\x1d.second.protos.VoxelGenerator\x12N\n\x17voxel_feature_extractor\x18\x03 \x01(\x0b\x32-.second.protos.VoxelNet.VoxelFeatureExtractor\x12P\n\x18middle_feature_extractor\x18\x04 \x01(\x0b\x32..second.protos.VoxelNet.MiddleFeatureExtractor\x12(\n\x03rpn\x18\x05 \x01(\x0b\x32\x1b.second.protos.VoxelNet.RPN\x12\x1a\n\x12num_point_features\x18\x06 \x01(\r\x12\x19\n\x11use_sigmoid_score\x18\x07 \x01(\x08\x12!\n\x04loss\x18\x08 \x01(\x0b\x32\x13.second.protos.Loss\x12\x1f\n\x17\x65ncode_rad_error_by_sin\x18\t \x01(\x08\x12\"\n\x1a\x65ncode_background_as_zeros\x18\n \x01(\x08\x12 \n\x18use_direction_classifier\x18\x0b \x01(\x08\x12\x1d\n\x15\x64irection_loss_weight\x18\x0c \x01(\x02\x12\x18\n\x10pos_class_weight\x18\r \x01(\x02\x12\x18\n\x10neg_class_weight\x18\x0e \x01(\x02\x12<\n\x0eloss_norm_type\x18\x0f \x01(\x0e\x32$.second.protos.VoxelNet.LossNormType\x12*\n\tbox_coder\x18\x10 \x01(\x0b\x32\x17.second.protos.BoxCoder\x12\x36\n\x0ftarget_assigner\x18\x11 \x01(\x0b\x32\x1d.second.protos.TargetAssigner\x12\x1f\n\x17post_center_limit_range\x18\x12 \x03(\x02\x12\x18\n\x10\x64irection_offset\x18\x13 \x01(\x02\x12\x18\n\x10sin_error_factor\x18\x14 \x01(\x02\x12\x1a\n\x12nms_class_agnostic\x18\x15 \x01(\x08\x12\x1a\n\x12num_direction_bins\x18\x16 \x01(\x03\x12\x1e\n\x16\x64irection_limit_offset\x18\x17 \x01(\x02\x12\x13\n\x0blidar_input\x18\x18 \x01(\x08\x1az\n\x15VoxelFeatureExtractor\x12\x19\n\x11module_class_name\x18\x01 \x01(\t\x12\x13\n\x0bnum_filters\x18\x02 \x03(\x05\x12\x15\n\rwith_distance\x18\x03 \x01(\x08\x12\x1a\n\x12num_input_features\x18\x04 \x01(\x05\x1a\xa0\x01\n\x16MiddleFeatureExtractor\x12\x19\n\x11module_class_name\x18\x01 \x01(\t\x12\x19\n\x11num_filters_down1\x18\x02 \x03(\x05\x12\x19\n\x11num_filters_down2\x18\x03 \x03(\x05\x12\x1a\n\x12num_input_features\x18\x04 \x01(\x05\x12\x19\n\x11\x64ownsample_factor\x18\x05 \x01(\x05\x1a\xc5\x02\n\x03RPN\x12\x19\n\x11module_class_name\x18\x01 \x01(\t\x12\x12\n\nlayer_nums\x18\x02 \x03(\x05\x12\x15\n\rlayer_strides\x18\x03 \x03(\x05\x12\x13\n\x0bnum_filters\x18\x04 \x03(\x05\x12\x18\n\x10upsample_strides\x18\x05 \x03(\x01\x12\x1c\n\x14num_upsample_filters\x18\x06 \x03(\x05\x12\x15\n\ruse_groupnorm\x18\x07 \x01(\x08\x12\x12\n\nnum_groups\x18\x08 \x01(\x05\x12\x1a\n\x12num_input_features\x18\t \x01(\x05\x12\x17\n\x0f\x63orr_patch_size\x18\n \x01(\x05\x12\x18\n\x10\x63orr_kernel_size\x18\x0b \x01(\x05\x12\x1b\n\x13\x63orr_dilation_patch\x18\x0c \x01(\x05\x12\x14\n\x0cvoting_range\x18\r \x01(\x05\"`\n\x0cLossNormType\x12\x15\n\x11NormByNumExamples\x10\x00\x12\x16\n\x12NormByNumPositives\x10\x01\x12\x13\n\x0fNormByNumPosNeg\x10\x02\x12\x0c\n\x08\x44ontNorm\x10\x03\x62\x06proto3')
   ,
   dependencies=[second_dot_protos_dot_losses__pb2.DESCRIPTOR,second_dot_protos_dot_box__coder__pb2.DESCRIPTOR,second_dot_protos_dot_target__pb2.DESCRIPTOR,second_dot_protos_dot_voxel__generator__pb2.DESCRIPTOR,])
 
@@ -55,8 +55,8 @@ _VOXELNET_LOSSNORMTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1695,
-  serialized_end=1791,
+  serialized_start=1717,
+  serialized_end=1813,
 )
 _sym_db.RegisterEnumDescriptor(_VOXELNET_LOSSNORMTYPE)
 
@@ -261,6 +261,13 @@ _VOXELNET_RPN = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='voting_range', full_name='second.protos.VoxelNet.RPN.voting_range', index=12,
+      number=13, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -274,7 +281,7 @@ _VOXELNET_RPN = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=1390,
-  serialized_end=1693,
+  serialized_end=1715,
 )
 
 _VOXELNET = _descriptor.Descriptor(
@@ -466,7 +473,7 @@ _VOXELNET = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=170,
-  serialized_end=1791,
+  serialized_end=1813,
 )
 
 _VOXELNET_VOXELFEATUREEXTRACTOR.containing_type = _VOXELNET

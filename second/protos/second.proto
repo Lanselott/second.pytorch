@@ -42,6 +42,7 @@ message VoxelNet {
     int32 corr_patch_size = 10;
     int32 corr_kernel_size = 11;
     int32 corr_dilation_patch = 12;
+    int32 voting_range = 13;
   }
   RPN rpn = 5;
   uint32 num_point_features = 6;

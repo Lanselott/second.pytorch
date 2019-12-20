@@ -64,6 +64,7 @@ class VoxelNet_track(nn.Module):
                  corr_patch_size=12,
                  corr_kernel_size=3,
                  corr_dilation_patch=1,
+                 voting_range=1,
                  vfe_class_name="VoxelFeatureExtractor",
                  vfe_num_filters=[32, 128],
                  with_distance=False,
@@ -175,7 +176,8 @@ class VoxelNet_track(nn.Module):
             num_direction_bins=self._num_direction_bins,
             corr_patch_size=corr_patch_size,
             corr_kernel_size=corr_kernel_size,
-            corr_dilation_patch=corr_dilation_patch)
+            corr_dilation_patch=corr_dilation_patch,
+            voting_range=voting_range)
         self.rpn_acc = metrics.Accuracy(
             dim=-1, encode_background_as_zeros=encode_background_as_zeros)
         self.rpn_precision = metrics.Precision(dim=-1)
