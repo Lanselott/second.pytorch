@@ -76,7 +76,7 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
     $PIP_INSTALL \
         torchvision \
-        spatial_correlation_sampler \ 
+        # spatial_correlation_sampler \ 
         && \
 # ==================================================================
 # config & cleanup
