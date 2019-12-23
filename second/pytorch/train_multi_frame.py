@@ -384,9 +384,8 @@ def train(config_path,
                     example_2 = example_list[1: ]
                     for i in range(len(example)):
                         example[i], example_2[i] = handle_frames(example[i], example_2[i])
-                    example_list = []
+                    example_list.clear()
                     example_list.append(sample)
-            
                 example = merge_list_inputs(example)
                 example_2 = merge_list_inputs(example_2)
 
