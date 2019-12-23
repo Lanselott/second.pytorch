@@ -527,6 +527,7 @@ class RPNBase_tracking(RPNNoHeadBase):
         Algorithm here
         '''
         current_offset_mask = examples[1]['offset_masks']
+        # embed()
         previous_out = res_list[0]['out']
         current_out = res_list[1]['out']
         # t = time.time()

@@ -12,6 +12,7 @@ from torchplus.ops.array_ops import gather_nd, scatter_nd
 from torchplus.tools import change_default_args
 from second.pytorch.utils import torch_timer
 
+from IPython import embed
 REGISTERED_MIDDLE_CLASSES = {}
 
 def register_middle(cls, name=None):

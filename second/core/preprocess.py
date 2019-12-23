@@ -44,7 +44,8 @@ class BatchSampler:
             ret = self._indices[self._idx:].copy()
             self._reset()
         else:
-            if self.tracking and self._sample_counter % 2 == 0:
+            batch = 4 # TODO: update to config
+            if self.tracking and self._sample_counter % (batch + 1) == 0:
                 self._idx += num
             ret = self._indices[self._idx:self._idx + num]
         self._sample_counter += 1

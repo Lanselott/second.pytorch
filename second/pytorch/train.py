@@ -299,9 +299,9 @@ def train(config_path,
             for example in dataloader:
                 lr_scheduler.step(net.get_global_step())
                 time_metrics = example["metrics"]
+                embed()
                 example.pop("metrics")
                 example_torch = example_convert_to_torch(example, float_dtype)
-
                 batch_size = example["anchors"].shape[0]
 
                 ret_dict = net_parallel(example_torch)

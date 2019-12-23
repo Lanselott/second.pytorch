@@ -26,6 +26,69 @@ import psutil
 
 from IPython import embed
 from frames_op import handle_frames
+from collections import defaultdict
+
+def merge_list_inputs(examples):
+    '''
+    ['voxels', 'num_points', 'coordinates', 'num_voxels', 'metrics', 'calib', 'anchors', 'anchors_mask', 'gt_names', 'labels', 'reg_targets', 'gt_boxes', 'importance', 'metadata']
+    '''
+    example_merged = defaultdict(list)
+    for example in examples:
+        for k, v in example.items():
+            # embed()
+            if type(v) == list:
+                example_merged[k].append(v[0])
+            else:
+                example_merged[k].append(v)
+    ret = {}
+    for key, elems in example_merged.items():
+        if key in [
+                'voxels', 'num_points', 'num_gt', 'voxel_labels', 'gt_names', 'gt_classes', 'gt_boxes', 'offset_masks'
+        ]:
+            ret[key] = np.concatenate(elems, axis=0)
+        elif key == 'metadata':
+            ret[key] = elems
+        elif key == "calib":
+            ret[key] = {}
+            for elem in elems:
+                for k1, v1 in elem.items():
+                    if k1 not in ret[key]:
+                        ret[key][k1] = [v1]
+                    else:
+                        ret[key][k1].append(v1)
+            for k1, v1 in ret[key].items():
+                ret[key][k1] = np.stack(v1, axis=0)
+        elif key == 'coordinates':
+            # pass # BUG
+            coors = []
+            for i, coor in enumerate(elems):
+                '''
+                concat coors to batch coors
+                '''
+                coor[..., 0] = i
+                coors.append(coor)
+            ret[key] = np.concatenate(coors, axis=0)
+        elif key == 'metrics':
+            ret[key] = elems
+        else:
+            ret[key] = np.stack(elems, axis=0)
+        # key == 'anchors' or key == 'anchors_mask' or key == 'labels' or key == 'reg_targets':
+        #     ret[key] = elems
+    # batch, 1, ... - >  batch, ...
+    keys = ret.keys()
+        
+    ret['anchors'] = ret['anchors'].squeeze()
+
+    if 'anchors_mask' in keys:
+        ret['anchors_mask'] = ret['anchors_mask'].squeeze()
+    
+    ret['labels'] = ret['labels'].squeeze()
+    ret['reg_targets'] = ret['reg_targets'].squeeze()
+    ret['importance'] = ret['importance'].squeeze()
+    ret['offset_coords'] = ret['offset_coords'].squeeze()
+
+    return ret
+        
 
 def example_convert_to_torch(example, dtype=torch.float32,
                              device=None) -> dict:
@@ -273,6 +336,12 @@ def train(config_path,
         collate_fn=collate_fn,
         worker_init_fn=_worker_init_fn,
         drop_last=not multi_gpu)
+    '''
+    Previous frame t-5 -> t-1
+    Current frame t-4 -> t
+    Batch size is 4 for each frame
+    '''
+    batch = 4 + 1
     eval_dataloader = torch.utils.data.DataLoader(
         eval_dataset,
         batch_size=eval_input_cfg.batch_size, # only support multi-gpu train
@@ -291,24 +360,37 @@ def train(config_path,
     t = time.time()
     steps_per_eval = train_cfg.steps_per_eval
     clear_metrics_every_epoch = train_cfg.clear_metrics_every_epoch
-
+    
     amp_optimizer.zero_grad()
     step_times = []
     step = start_step
+    example_list = []
+
     try:
         while True:
             if clear_metrics_every_epoch:
-                net.clear_metrics()
-            data_iterator = iter(dataloader)
-            example_2 = next(data_iterator)
+                net.clear_metrics()   
 
-            for example in dataloader:
-                if example['metadata'][0]['image_idx'] == '0001/000000': # first of scene
-                    example_2 = example
-                    duplicate_example_2 = next(data_iterator)
+            for sample in dataloader:
+                '''
+                Handle multi-batch here
+                '''
+                # Collect batches for tracking
+                if len(example_list) % batch != 0 or len(example_list) == 0:
+                    example_list.append(sample)
+                    continue
                 else:
-                    example_2 = next(data_iterator)
-                # # scene_list = []
+                    example = example_list[ :-1] 
+                    example_2 = example_list[1: ]
+                    for i in range(len(example)):
+                        example[i], example_2[i] = handle_frames(example[i], example_2[i])
+                    example_list = []
+                    example_list.append(sample)
+            
+                example = merge_list_inputs(example)
+                example_2 = merge_list_inputs(example_2)
+
+                # Handle coordinates
                 # # '''
                 # # check sampler works correct
                 # # '''
@@ -323,15 +405,14 @@ def train(config_path,
                 # import imageio
                 # imageio.imwrite("previous_frame.png", image1)
                 # imageio.imwrite('current_frame.png', image2)
-                # print("pair done")
-                # done
-                # Consider two frames. If the scene change, we should not merge these two
+                # # print("pair done")
+                # # embed()
+                # # done
+                # # Consider two frames. If the scene change, we should not merge these two
                 if example['metadata'][0]['image_idx'][:4] != example_2['metadata'][0]['image_idx'][:4]: continue
-                
                 '''
                 TODO: Handle correlation. warp masks, ...
                 '''
-                example, example_2 = handle_frames(example, example_2)
                 lr_scheduler.step(net.get_global_step())
                 time_metrics = example["metrics"]
                 example.pop("metrics")

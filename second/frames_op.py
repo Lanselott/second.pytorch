@@ -82,10 +82,9 @@ def handle_frames(previous_frame, current_frame):
 
     gt_offset[..., 0] = offset_x_list
     gt_offset[..., 1] = offset_y_list
-
     # Merge batches
-    gt_offset_padded = np.zeros([1,50,2])
-    offset_coords_padded = np.zeros([1,50,4])
+    gt_offset_padded = np.zeros([1,250,2])
+    offset_coords_padded = np.zeros([1,250,4])
     target_num = gt_offset.shape[0]
 
     offset_masks = np.zeros([w_size,h_size,2],dtype=int)
@@ -134,7 +133,6 @@ def get_response_offset(corr_response,
                         dilation_patch=1):
     n, patch_size, _, h, w= corr_response.shape
     shift = patch_size // 2
-
     corr_response = corr_response.reshape(n, patch_size * patch_size, h, w)
     offset_mask = offset_mask.reshape(n, h, w, -1).permute(0, 3, 1, 2).contiguous()
     response_sum = torch.zeros([n, patch_size * patch_size, h, w], device=corr_response.device)

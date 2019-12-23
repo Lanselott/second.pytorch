@@ -57,9 +57,9 @@ def merge_second_batch(batch_list, tracking=False):
     return ret
 
 def merge_tracking_second_batch(batch_list, tracking=True):
-    if batch_list[0]['metadata']['image_idx'][-1] == '0' and len(batch_list) > 1:
-        print("First frame ,merge itelf")
-        batch_list[1] = batch_list[0] 
+    # if batch_list[0]['metadata']['image_idx'][-1] == '0' and len(batch_list) > 1:
+    #     print("First frame ,merge itelf")
+    #     batch_list[1] = batch_list[0] 
 
     example_merged = defaultdict(list)
     for example in batch_list:
@@ -187,8 +187,14 @@ def prep_pointcloud(input_dict,
     '''
     # if input_dict['metadata']['image_idx'][-1] == '0':
     #     frame_count[0] = 1 # clean up
+    
+    batch = 5 # batch + 1
 
-    update_seed = frame_count[0] % 2
+    if frame_count[0] % batch == 1:
+        update_seed = 1
+    else:
+        update_seed = 0
+    # update_seed = frame_count[0] % batch
     if tracking and update_seed:
         seed = seed_list[0]
         seed_list[0] = np.random.randint(2**32 - 1)
@@ -197,9 +203,10 @@ def prep_pointcloud(input_dict,
         if seed is None:
             seed = np.random.randint(2**32 - 1)
             seed_list[0] = seed
-
+    if not tracking:
+        seed = np.random.randint(2**32 - 1)
     frame_count[0] += 1
-    # print("seed:", seed)
+
     t = time.time()
     class_names = target_assigner.classes
     points = input_dict["lidar"]["points"]
@@ -476,4 +483,10 @@ def prep_pointcloud(input_dict,
             # 'reg_weights': targets_dict['bbox_outside_weights'],
             'importance': targets_dict['importance'],
         })
+        # if tracking:
+        #     # targets_dict['points'] = points
+        #     # Handle voxel for tracking 
+        #     example.update({
+        #         'points': points,
+        #     })
     return example

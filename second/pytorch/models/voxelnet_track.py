@@ -768,7 +768,6 @@ def create_loss(loc_loss_ftor,
         #     reg_targets[..., 6:7], 0.5, 2 * np.pi / num_direction_bins)
         box_preds, reg_targets = add_sin_difference(box_preds, reg_targets, box_preds[..., 6:7], reg_targets[..., 6:7],
                                                     sin_error_factor)
-
     loc_losses = loc_loss_ftor(
         box_preds, reg_targets, weights=reg_weights)  # [N, M]
     cls_losses = cls_loss_ftor(
