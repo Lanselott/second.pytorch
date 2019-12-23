@@ -523,13 +523,29 @@ class RPNBase_tracking(RPNNoHeadBase):
         
         for x in xs:
             res_list.append(super().forward(x))
+        
+        previous_out = res_list[0]['out']
+        current_out = res_list[1]['out']
+        n, c, w, h = current_out.shape
         '''
         Algorithm here
         '''
-        current_offset_mask = examples[1]['offset_masks']
+        if 'offset_masks' in examples[1].keys(): 
+            # Training
+            current_offset_mask = examples[1]['offset_masks']
+            embed()
+        else:
+            '''
+            Get offset mask according to original classifications
+            Threshold: 0.8
+            '''
+            cls_threshold = 0.8
+            # Inference
+            warped_previous_out = torch.zeros(current_out.shape, device=current_out.device)
+            current_offset_mask = self.conv_cls(torch.cat([current_out, warped_previous_out], dim=1)).max(axis=1)[0].reshape(w * h, -1)
+            current_offset_mask = (current_offset_mask > cls_threshold).float()
+
         # embed()
-        previous_out = res_list[0]['out']
-        current_out = res_list[1]['out']
         # t = time.time()
         corr_response = self.correlation_sampler(current_out, previous_out)
         offset_map = get_response_offset(corr_response, 
@@ -540,8 +556,7 @@ class RPNBase_tracking(RPNNoHeadBase):
                             dilation_patch=self._corr_dilation_patch)
         # print("corr time:{}".format(time.time() - t))
         warped_previous_out = self.resample(previous_out, offset_map)
-        x = res_list[1]["out"] # Current frame
-        x = torch.cat([x, warped_previous_out], dim=1)
+        x = torch.cat([current_out, warped_previous_out], dim=1)
         box_preds = self.conv_box(x)
         cls_preds = self.conv_cls(x)
         # ''' test '''

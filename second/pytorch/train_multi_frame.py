@@ -28,7 +28,7 @@ from IPython import embed
 from frames_op import handle_frames
 from collections import defaultdict
 
-def merge_list_inputs(examples):
+def merge_list_inputs(examples, ):
     '''
     ['voxels', 'num_points', 'coordinates', 'num_voxels', 'metrics', 'calib', 'anchors', 'anchors_mask', 'gt_names', 'labels', 'reg_targets', 'gt_boxes', 'importance', 'metadata']
     '''
@@ -76,16 +76,18 @@ def merge_list_inputs(examples):
         #     ret[key] = elems
     # batch, 1, ... - >  batch, ...
     keys = ret.keys()
-        
-    ret['anchors'] = ret['anchors'].squeeze()
+    ret['anchors'] = ret['anchors'].squeeze(axis=1)
 
     if 'anchors_mask' in keys:
-        ret['anchors_mask'] = ret['anchors_mask'].squeeze()
-    
-    ret['labels'] = ret['labels'].squeeze()
-    ret['reg_targets'] = ret['reg_targets'].squeeze()
-    ret['importance'] = ret['importance'].squeeze()
-    ret['offset_coords'] = ret['offset_coords'].squeeze()
+        ret['anchors_mask'] = ret['anchors_mask'].squeeze(axis=1)
+    if 'labels' in keys:
+        ret['labels'] = ret['labels'].squeeze(axis=1)
+    if 'reg_targets' in keys:
+        ret['reg_targets'] = ret['reg_targets'].squeeze(axis=1)
+    if 'importance' in keys:
+        ret['importance'] = ret['importance'].squeeze(axis=1)
+    if 'offset_coords' in keys:
+        ret['offset_coords'] = ret['offset_coords'].squeeze(axis=1)
 
     return ret
         
@@ -350,6 +352,7 @@ def train(config_path,
         num_workers=eval_input_cfg.preprocess.num_workers,
         pin_memory=False,
         collate_fn=merge_tracking_second_batch)
+
     ######################
     # TRAINING
     ######################
@@ -372,21 +375,22 @@ def train(config_path,
             if clear_metrics_every_epoch:
                 net.clear_metrics()   
 
-            for sample in dataloader:
+            for train_sample in dataloader:
                 '''
                 Handle multi-batch here
                 '''
                 # Collect batches for tracking
                 if len(train_example_list) % train_batch != 0 or len(train_example_list) == 0:
-                    train_example_list.append(sample)
+                    train_example_list.append(train_sample)
                     continue
                 else:
                     example = train_example_list[ :-1] 
                     example_2 = train_example_list[1: ]
                     for i in range(len(example)):
                         example[i], example_2[i] = handle_frames(example[i], example_2[i])
+
                     train_example_list.clear()
-                    train_example_list.append(sample)
+                    train_example_list.append(train_sample)
                 example = merge_list_inputs(example)
                 example_2 = merge_list_inputs(example_2)
 
@@ -513,13 +517,14 @@ def train(config_path,
                     net.clear_timer()
                     prog_bar.start((len(eval_dataset) + eval_input_cfg.batch_size - 1)
                                 // eval_input_cfg.batch_size)
-                    for sample in iter(eval_dataloader):
+                    for eval_sample in iter(eval_dataloader):
                         '''
                         Evaluation 
+                        keys: ['voxels', 'num_points', 'coordinates', 'num_voxels', 'metrics', 'calib', 'anchors', 'metadata']
                         '''
                         # Collect batches for tracking
                         if len(eval_example_list) % eval_batch != 0 or len(eval_example_list) == 0:
-                            eval_example_list.append(sample)
+                            eval_example_list.append(eval_sample)
                             continue
                         else:
                             example = eval_example_list[ :-1] 
@@ -527,13 +532,27 @@ def train(config_path,
                             # for i in range(len(example)):
                             #     example[i], example_2[i] = handle_frames(example[i], example_2[i])
                             eval_example_list.clear()
-                            eval_example_list.append(sample)
+                            eval_example_list.append(eval_sample)
                         example = merge_list_inputs(example)
                         example_2 = merge_list_inputs(example_2)
+
                         if example['metadata'][0]['image_idx'] == '0000/000000':
-                            pass
-                        example = example_convert_to_torch(example, float_dtype)
-                        detections += net(example)
+                            # First frame
+                            example = example_convert_to_torch(example, float_dtype)
+                            example_2 = example_convert_to_torch(example_2, float_dtype)
+
+                            detections += net([example, example]) # First frame 0000/000000 and 0000/000000
+                            detections += net([example, example_2]) # Second frame 0000/000000 and 0000/000001
+
+                        elif example['metadata'][0]['image_idx'][:4] != example_2['metadata'][0]['image_idx'][:4]:
+                            # New scence
+                            example_2 = example_convert_to_torch(example_2, float_dtype)
+                            detections += net([example_2, example_2]) 
+                        else:
+                            # As usual
+                            example = example_convert_to_torch(example, float_dtype)
+                            example_2 = example_convert_to_torch(example_2, float_dtype)
+                            detections += net([example, example_2]) 
                         prog_bar.print_bar()
 
                     sec_per_ex = len(eval_dataset) / (time.time() - t)
