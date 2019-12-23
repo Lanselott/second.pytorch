@@ -341,7 +341,7 @@ def train(config_path,
     Current frame t-4 -> t
     Batch size is 4 for each frame
     '''
-    batch =  2 + 1 #4 + 1
+    batch = 4 + 1
     eval_dataloader = torch.utils.data.DataLoader(
         eval_dataset,
         batch_size=eval_input_cfg.batch_size, # only support multi-gpu train
