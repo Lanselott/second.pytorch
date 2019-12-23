@@ -341,7 +341,8 @@ def train(config_path,
     Current frame t-4 -> t
     Batch size is 4 for each frame
     '''
-    batch = 4 + 1
+    train_batch = 4 + 1
+    eval_batch = 1 + 1
     eval_dataloader = torch.utils.data.DataLoader(
         eval_dataset,
         batch_size=eval_input_cfg.batch_size, # only support multi-gpu train
@@ -364,8 +365,8 @@ def train(config_path,
     amp_optimizer.zero_grad()
     step_times = []
     step = start_step
-    example_list = []
-
+    train_example_list = []
+    eval_example_list = []
     try:
         while True:
             if clear_metrics_every_epoch:
@@ -376,16 +377,16 @@ def train(config_path,
                 Handle multi-batch here
                 '''
                 # Collect batches for tracking
-                if len(example_list) % batch != 0 or len(example_list) == 0:
-                    example_list.append(sample)
+                if len(train_example_list) % train_batch != 0 or len(train_example_list) == 0:
+                    train_example_list.append(sample)
                     continue
                 else:
-                    example = example_list[ :-1] 
-                    example_2 = example_list[1: ]
+                    example = train_example_list[ :-1] 
+                    example_2 = train_example_list[1: ]
                     for i in range(len(example)):
                         example[i], example_2[i] = handle_frames(example[i], example_2[i])
-                    example_list.clear()
-                    example_list.append(sample)
+                    train_example_list.clear()
+                    train_example_list.append(sample)
                 example = merge_list_inputs(example)
                 example_2 = merge_list_inputs(example_2)
 
@@ -512,7 +513,25 @@ def train(config_path,
                     net.clear_timer()
                     prog_bar.start((len(eval_dataset) + eval_input_cfg.batch_size - 1)
                                 // eval_input_cfg.batch_size)
-                    for example in iter(eval_dataloader):
+                    for sample in iter(eval_dataloader):
+                        '''
+                        Evaluation 
+                        '''
+                        # Collect batches for tracking
+                        if len(eval_example_list) % eval_batch != 0 or len(eval_example_list) == 0:
+                            eval_example_list.append(sample)
+                            continue
+                        else:
+                            example = eval_example_list[ :-1] 
+                            example_2 = eval_example_list[1: ]
+                            # for i in range(len(example)):
+                            #     example[i], example_2[i] = handle_frames(example[i], example_2[i])
+                            eval_example_list.clear()
+                            eval_example_list.append(sample)
+                        example = merge_list_inputs(example)
+                        example_2 = merge_list_inputs(example_2)
+                        if example['metadata'][0]['image_idx'] == '0000/000000':
+                            pass
                         example = example_convert_to_torch(example, float_dtype)
                         detections += net(example)
                         prog_bar.print_bar()
