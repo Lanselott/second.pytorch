@@ -386,6 +386,13 @@ def train(config_path,
                 else:
                     example = train_example_list[ :-1] 
                     example_2 = train_example_list[1: ]
+                    # Handle scene change
+                    scene_inds = [exp['metadata'][0]['image_idx'][:4] for exp in example]
+                    scene_2_inds = [exp['metadata'][0]['image_idx'][:4] for exp in example_2]
+                    if scene_inds != scene_2_inds:
+                        print("Scene change.")
+                        # Overwrite directly 
+                        example = example_2
                     for i in range(len(example)):
                         example[i], example_2[i] = handle_frames(example[i], example_2[i])
 
@@ -412,8 +419,6 @@ def train(config_path,
                 # # print("pair done")
                 # # embed()
                 # # done
-                # # Consider two frames. If the scene change, we should not merge these two
-                if example['metadata'][0]['image_idx'][:4] != example_2['metadata'][0]['image_idx'][:4]: continue
                 '''
                 TODO: Handle correlation. warp masks, ...
                 '''
