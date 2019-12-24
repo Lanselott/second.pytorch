@@ -393,8 +393,8 @@ def train(config_path,
                         example = example_2
                     for i in range(len(example)):
                         example[i], example_2[i] = handle_frames(example[i], example_2[i])
-
-                    train_example_list.clear()
+                    # train_example_list.clear()
+                    train_example_list = [train_example_list[-1]]
                     train_example_list.append(train_sample)
                 example = merge_list_inputs(example)
                 example_2 = merge_list_inputs(example_2)
@@ -429,7 +429,6 @@ def train(config_path,
 
                 ret_dict = net_parallel([example_torch, example_2_torch])
                 # ret_dict = net_parallel(example_torch)
-
                 cls_preds = ret_dict["cls_preds"]
                 loss = ret_dict["loss"].mean()
                 cls_loss_reduced = ret_dict["cls_loss_reduced"].mean()
