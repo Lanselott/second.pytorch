@@ -35,7 +35,6 @@ def merge_list_inputs(examples, ):
     example_merged = defaultdict(list)
     for example in examples:
         for k, v in example.items():
-            # embed()
             if type(v) == list:
                 example_merged[k].append(v[0])
             else:
@@ -535,7 +534,7 @@ def train(config_path,
                             example_2 = eval_example_list[1: ]
                             # for i in range(len(example)):
                             #     example[i], example_2[i] = handle_frames(example[i], example_2[i])
-                            eval_example_list.clear()
+                            eval_example_list.pop(0)
                             eval_example_list.append(eval_sample)
                         example = merge_list_inputs(example)
                         example_2 = merge_list_inputs(example_2)
@@ -557,8 +556,14 @@ def train(config_path,
                             example = example_convert_to_torch(example, float_dtype)
                             example_2 = example_convert_to_torch(example_2, float_dtype)
                             detections += net([example, example_2]) 
+                        
                         prog_bar.print_bar()
 
+                    # Handle last one!
+                    last_example = merge_list_inputs([eval_sample])
+                    last_example = example_convert_to_torch(last_example, float_dtype)
+                    detections += net([example_2, last_example])
+                    
                     sec_per_ex = len(eval_dataset) / (time.time() - t)
                     model_logging.log_text(
                         f'generate label finished({sec_per_ex:.2f}/s). start eval:',

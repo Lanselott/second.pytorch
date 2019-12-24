@@ -71,8 +71,11 @@ def build(input_reader_config,
     dataset_cls = get_dataset_class(dataset_cfg.dataset_class_name)
     assert dataset_cls.NumPointFeatures >= 3, "you must set this to correct value"
     assert dataset_cls.NumPointFeatures == num_point_features, "currently you need keep them same"
+    # data_rand_seed=np.random.randint(2**32 - 1)
+
     prep_func = partial(
         prep_pointcloud,
+        # data_rand_seed=data_rand_seed,
         root_path=dataset_cfg.kitti_root_path,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
