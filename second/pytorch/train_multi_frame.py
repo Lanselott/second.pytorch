@@ -374,7 +374,6 @@ def train(config_path,
         while True:
             if clear_metrics_every_epoch:
                 net.clear_metrics()   
-
             for train_sample in dataloader:
                 '''
                 Handle multi-batch here
@@ -400,25 +399,25 @@ def train(config_path,
                     train_example_list.append(train_sample)
                 example = merge_list_inputs(example)
                 example_2 = merge_list_inputs(example_2)
-
+                
                 # Handle coordinates
-                # # '''
-                # # check sampler works correct
-                # # '''
-                # image1 = example['labels'][0].reshape(2, 200, 176)
-                # image2 = example_2['labels'][0].reshape(2, 200, 176)
-                # image1 = np.where(image1 < 0, 0, image1)
-                # image2 = np.where(image2 < 0, 0, image2)
+                # '''
+                # check sampler works correct
+                # '''
+                # for i in range(train_batch - 1):
+                #     image1 = example['labels'][i].reshape(2, 200, 176)
+                #     image2 = example_2['labels'][i].reshape(2, 200, 176)
+                #     image1 = np.where(image1 < 0, 0, image1)
+                #     image2 = np.where(image2 < 0, 0, image2)
 
-                # image1 = image1[0] + image1[1]
-                # image2 = image2[0] + image2[1]
+                #     image1 = image1[0] + image1[1]
+                #     image2 = image2[0] + image2[1]
 
-                # import imageio
-                # imageio.imwrite("previous_frame.png", image1)
-                # imageio.imwrite('current_frame.png', image2)
-                # # print("pair done")
-                # # embed()
-                # # done
+                #     import imageio
+                #     imageio.imwrite("previous_frame_{}.png".format(i), image1)
+                #     imageio.imwrite('current_frame_{}.png'.format(i), image2)
+                # print("pair done")
+                # done
                 '''
                 TODO: Handle correlation. warp masks, ...
                 '''

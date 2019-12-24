@@ -260,7 +260,6 @@ class VoxelNet_track(nn.Module):
             neg_cls_weight=self._neg_cls_weight,
             loss_norm_type=self._loss_norm_type,
             dtype=box_preds.dtype)
-
         cls_targets = labels * cared.type_as(labels)
         cls_targets = cls_targets.unsqueeze(-1)
         self.end_timer("prepare weight forward")
@@ -389,6 +388,7 @@ class VoxelNet_track(nn.Module):
         err_msg = f"num_anchors={batch_anchors.shape[1]}, but num_output={box_preds.shape[1]}. please check size"
         assert batch_anchors.shape[1] == box_preds.shape[1], err_msg
         if self.training:
+            # This example is the second frame
             return self.loss(example, preds_dict)
         else:
             self.start_timer("predict")

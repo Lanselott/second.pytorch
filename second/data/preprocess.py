@@ -189,6 +189,7 @@ def prep_pointcloud(input_dict,
     #     frame_count[0] = 1 # clean up
     
     batch = 5 # batch + 1
+    # print("frame count:",frame_count[0])
 
     if frame_count[0] % batch == 1:
         update_seed = 1
@@ -205,8 +206,8 @@ def prep_pointcloud(input_dict,
             seed_list[0] = seed
     if not tracking:
         seed = np.random.randint(2**32 - 1)
+    # print("seed:", seed)
     frame_count[0] += 1
-
     t = time.time()
     class_names = target_assigner.classes
     points = input_dict["lidar"]["points"]

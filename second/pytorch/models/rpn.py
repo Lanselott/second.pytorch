@@ -533,7 +533,6 @@ class RPNBase_tracking(RPNNoHeadBase):
         if 'offset_masks' in examples[1].keys(): 
             # Training
             current_offset_mask = examples[1]['offset_masks']
-            embed()
         else:
             '''
             Get offset mask according to original classifications
