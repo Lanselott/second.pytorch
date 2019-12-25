@@ -571,7 +571,6 @@ def train(config_path,
                     model_logging.log_text(
                         f'generate label finished({sec_per_ex:.2f}/s). start eval:',
                         global_step)
-                    embed()
                     result_dict = eval_dataset.dataset.evaluation(
                         detections, str(result_path_step))
                     for k, v in result_dict["results"].items():
