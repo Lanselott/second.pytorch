@@ -367,12 +367,11 @@ def train(config_path,
     amp_optimizer.zero_grad()
     step_times = []
     step = start_step
-    train_example_list = []
-    eval_example_list = []
     try:
         while True:
             if clear_metrics_every_epoch:
                 net.clear_metrics()   
+            train_example_list = []
             for train_sample in dataloader:
                 '''
                 Handle multi-batch here
@@ -519,11 +518,13 @@ def train(config_path,
                     net.clear_timer()
                     prog_bar.start((len(eval_dataset) + eval_input_cfg.batch_size - 1)
                                 // eval_input_cfg.batch_size)
+
+                    '''
+                    Evaluation 
+                    keys: ['voxels', 'num_points', 'coordinates', 'num_voxels', 'metrics', 'calib', 'anchors', 'metadata']
+                    '''
+                    eval_example_list = []
                     for eval_sample in iter(eval_dataloader):
-                        '''
-                        Evaluation 
-                        keys: ['voxels', 'num_points', 'coordinates', 'num_voxels', 'metrics', 'calib', 'anchors', 'metadata']
-                        '''
                         # Collect batches for tracking
                         if len(eval_example_list) % eval_batch != 0 or len(eval_example_list) == 0:
                             eval_example_list.append(eval_sample)
@@ -567,6 +568,7 @@ def train(config_path,
                     model_logging.log_text(
                         f'generate label finished({sec_per_ex:.2f}/s). start eval:',
                         global_step)
+                    embed()
                     result_dict = eval_dataset.dataset.evaluation(
                         detections, str(result_path_step))
                     for k, v in result_dict["results"].items():
