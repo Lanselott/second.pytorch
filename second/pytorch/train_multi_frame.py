@@ -319,6 +319,7 @@ def train(config_path,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
         tracking=True,
+        multi_workers=True,
         multi_gpu=multi_gpu)
     eval_dataset = input_reader_builder.build(
         eval_input_cfg,
@@ -326,7 +327,8 @@ def train(config_path,
         training=False,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
-        tracking=True)
+        tracking=True,
+        multi_workers=True)
 
     dataloader = torch.utils.data.DataLoader(
         dataset,
@@ -415,6 +417,7 @@ def train(config_path,
                 #     imageio.imwrite("previous_frame_{}.png".format(i), image1)
                 #     imageio.imwrite('current_frame_{}.png'.format(i), image2)
                 # print("pair done")
+                # embed()
                 # done
                 '''
                 TODO: Handle correlation. warp masks, ...
@@ -653,7 +656,8 @@ def evaluate(config_path,
         training=False,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
-        tracking=True)
+        tracking=True,
+        multi_workers=True)
     eval_dataloader = torch.utils.data.DataLoader(
         eval_dataset,
         batch_size=batch_size,
@@ -746,6 +750,7 @@ def helper_tune_target_assigner(config_path, target_rate=None, update_freq=200, 
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
         tracking=True,
+        multi_workers=True,
         multi_gpu=False)
 
     dataloader = torch.utils.data.DataLoader(

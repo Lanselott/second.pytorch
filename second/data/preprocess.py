@@ -144,7 +144,8 @@ def prep_pointcloud(input_dict,
                     root_path,
                     voxel_generator,
                     target_assigner,
-                    tracking=False,
+                    tracking=False,        
+                    multi_workers=False,
                     db_sampler=None,
                     max_voxels=20000,
                     remove_outside_points=False,
@@ -190,23 +191,31 @@ def prep_pointcloud(input_dict,
     
     batch = 5 # batch + 1
 
-    if frame_count[0] % batch == 1:
-        update_seed = 1
-    else:
-        update_seed = 0
-    # update_seed = frame_count[0] % batch
-    if tracking and update_seed:
-        seed = seed_list[0]
-        seed_list[0] = np.random.randint(2**32 - 1)
-    elif tracking and not update_seed:
-        seed = seed_list[0]
-        if seed is None:
+    if not multi_workers:
+        if frame_count[0] % batch == 1:
+            update_seed = 1
+        else:
+            update_seed = 0
+        # update_seed = frame_count[0] % batch
+        if tracking and update_seed:
+            seed = seed_list[0]
+            seed_list[0] = np.random.randint(2**32 - 1)
+        elif tracking and not update_seed:
+            seed = seed_list[0]
+            if seed is None:
+                seed = np.random.randint(2**32 - 1)
+                seed_list[0] = seed
+        if not tracking:
             seed = np.random.randint(2**32 - 1)
-            seed_list[0] = seed
-    if not tracking:
+        frame_count[0] += 1
+        # print("seed:", seed)
+    else:
+        # print("frame_count:",frame_count[0])
+        np.random.seed(frame_count[0])
+        frame_count[0] += 1
         seed = np.random.randint(2**32 - 1)
-    frame_count[0] += 1
-    # print("seed:", seed)
+        # print("Random seed:", seed)
+ 
     t = time.time()
     class_names = target_assigner.classes
     points = input_dict["lidar"]["points"]

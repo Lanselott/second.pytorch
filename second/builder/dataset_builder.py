@@ -37,6 +37,7 @@ def build(input_reader_config,
           voxel_generator,
           target_assigner,
           tracking=False,
+          multi_workers=False,
           multi_gpu=False):
     """Builds a tensor dictionary based on the InputReader config.
 
@@ -80,6 +81,7 @@ def build(input_reader_config,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
         tracking=tracking,
+        multi_workers=multi_workers,
         training=training,
         max_voxels=prep_cfg.max_number_of_voxels,
         remove_outside_points=False,
