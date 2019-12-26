@@ -1,0 +1,1 @@
+python ./pytorch/train.py train --config_path=./configs/car.fhd.onestage_kitti_tracking_nvidia_1gpu_baseline.config --model_dir=/results/car_kitti_tracking_1gpu_super_converge_baseline --resume=True

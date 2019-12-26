@@ -682,20 +682,57 @@ def evaluate(config_path,
     prep_times = []
     t2 = time.time()
 
-    for example in iter(eval_dataloader):
+    eval_batch = 1 + 1
+    eval_example_list = []
+    
+    for eval_sample in iter(eval_dataloader):
+        # Collect batches for tracking
+        if len(eval_example_list) % eval_batch != 0 or len(eval_example_list) == 0:
+            eval_example_list.append(eval_sample)
+            continue
+        else:
+            example = eval_example_list[ :-1] 
+            example_2 = eval_example_list[1: ]
+            # for i in range(len(example)):
+            #     example[i], example_2[i] = handle_frames(example[i], example_2[i])
+            eval_example_list.pop(0)
+            eval_example_list.append(eval_sample)
+        example = merge_list_inputs(example)
+        example_2 = merge_list_inputs(example_2)
+
         if measure_time:
             prep_times.append(time.time() - t2)
             torch.cuda.synchronize()
             t1 = time.time()
-        example = example_convert_to_torch(example, float_dtype)
-        if measure_time:
-            torch.cuda.synchronize()
-            prep_example_times.append(time.time() - t1)
-        with torch.no_grad():
-            detections += net(example)
+
+        if example['metadata'][0]['image_idx'] == '0000/000000':
+            # First frame
+            example = example_convert_to_torch(example, float_dtype)
+            example_2 = example_convert_to_torch(example_2, float_dtype)
+            with torch.no_grad():
+                detections += net([example, example]) # First frame 0000/000000 and 0000/000000
+                detections += net([example, example_2]) # Second frame 0000/000000 and 0000/000001
+
+        elif example['metadata'][0]['image_idx'][:4] != example_2['metadata'][0]['image_idx'][:4]:
+            # New scence
+            example_2 = example_convert_to_torch(example_2, float_dtype)
+            with torch.no_grad():
+                detections += net([example_2, example_2]) 
+        else:
+            # As usual
+            example = example_convert_to_torch(example, float_dtype)
+            example_2 = example_convert_to_torch(example_2, float_dtype)
+            with torch.no_grad():
+                detections += net([example, example_2]) 
         bar.print_bar()
         if measure_time:
             t2 = time.time()
+    # Handle last one!
+    last_example = merge_list_inputs([eval_sample])
+    last_example = example_convert_to_torch(last_example, float_dtype)
+    detections += net([example_2, last_example])
+
+    embed()
 
     sec_per_example = len(eval_dataset) / (time.time() - t)
     print(f'generate label finished({sec_per_example:.2f}/s). start eval:')
