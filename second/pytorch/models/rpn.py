@@ -538,17 +538,25 @@ class RPNBase_tracking(RPNNoHeadBase):
             Get offset mask according to original classifications
             Threshold: 0.8
             '''
+            padding_radius = 6
             cls_threshold = 0.8
             # Inference
             warped_previous_out = torch.zeros(current_out.shape, device=current_out.device)
-            current_offset_mask = self.conv_cls(torch.cat([current_out, warped_previous_out], dim=1)).max(axis=1)[0].reshape(w * h, -1)
+            current_offset_mask = self.conv_cls(torch.cat([current_out, warped_previous_out], dim=1)).max(axis=1)[0]
             current_offset_mask = (current_offset_mask > cls_threshold).float()
 
-        # embed()
+            # Apply warp range
+            padding_locs = current_offset_mask.nonzero()[:, 1:]
+            for loc in padding_locs:
+                current_offset_mask[:, loc[0] - padding_radius:loc[0] + padding_radius, loc[1] - padding_radius:loc[1] + padding_radius] = 1
+            
+            # embed()
+            # import imageio
+            # imageio.imwrite("inference_offset_mask.png", current_offset_mask.reshape(200, 176).cpu().numpy())
         # t = time.time()
         corr_response = self.correlation_sampler(current_out, previous_out)
         offset_map = get_response_offset(corr_response, 
-                            offset_mask=current_offset_mask, 
+                            offset_mask=current_offset_mask.reshape(w * h, -1), 
                             patch_size=self._corr_patch_size, 
                             kernel_size=self._corr_kernel_size, 
                             voting_range=self._voting_range, 

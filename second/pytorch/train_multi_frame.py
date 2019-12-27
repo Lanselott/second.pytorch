@@ -732,8 +732,6 @@ def evaluate(config_path,
     last_example = example_convert_to_torch(last_example, float_dtype)
     detections += net([example_2, last_example])
 
-    embed()
-
     sec_per_example = len(eval_dataset) / (time.time() - t)
     print(f'generate label finished({sec_per_example:.2f}/s). start eval:')
     if measure_time:

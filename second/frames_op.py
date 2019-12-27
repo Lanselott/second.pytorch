@@ -145,6 +145,7 @@ def get_response_offset(corr_response,
 
     '''get argmax of channel response'''
     argmax_response_map = response_sum.max(1)[1] # [n, h, w]
+
     delta_y = argmax_response_map // patch_size - shift
     pos_offset_x = argmax_response_map % patch_size # [n, h, w]
     neg_offset_x = -(argmax_response_map % -patch_size) # [n, h, w]
