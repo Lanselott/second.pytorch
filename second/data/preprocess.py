@@ -144,7 +144,8 @@ def prep_pointcloud(input_dict,
                     root_path,
                     voxel_generator,
                     target_assigner,
-                    tracking=False,        
+                    tracking=False, 
+                    batch=5,       
                     multi_workers=False,
                     db_sampler=None,
                     max_voxels=20000,
@@ -189,9 +190,9 @@ def prep_pointcloud(input_dict,
     # if input_dict['metadata']['image_idx'][-1] == '0':
     #     frame_count[0] = 1 # clean up
     
-    batch = 5 # batch + 1
+    batch = batch # batch + 1
 
-    if not multi_workers:
+    if not multi_workers:   
         if frame_count[0] % batch == 1:
             update_seed = 1
         else:

@@ -1,0 +1,1 @@
+python ./pytorch/train_multi_frame.py train --config_path=./configs/pointpillars/car/xyres_20_tracking_local_1gpu_9315.config --model_dir=./results/car_pointpillar_kitti_tracking_1gpu_9315 --resume=True

@@ -312,6 +312,7 @@ def train(config_path,
     ######################
     # PREPARE INPUT
     ######################
+    train_batch = input_cfg.preprocess.num_workers
     dataset = input_reader_builder.build(
         input_cfg,
         model_cfg,
@@ -319,6 +320,7 @@ def train(config_path,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
         tracking=True,
+        batch=train_batch,
         multi_workers=True,
         multi_gpu=multi_gpu)
     eval_dataset = input_reader_builder.build(
@@ -344,7 +346,6 @@ def train(config_path,
     Current frame t-4 -> t
     Batch size is 4 for each frame
     '''
-    train_batch = 4 + 1
     eval_batch = 1 + 1
     eval_dataloader = torch.utils.data.DataLoader(
         eval_dataset,
@@ -353,7 +354,6 @@ def train(config_path,
         num_workers=eval_input_cfg.preprocess.num_workers,
         pin_memory=False,
         collate_fn=merge_tracking_second_batch)
-
     ######################
     # TRAINING
     ######################
@@ -656,6 +656,7 @@ def evaluate(config_path,
         voxel_generator=voxel_generator,
         target_assigner=target_assigner,
         tracking=True,
+        batch=2,
         multi_workers=True)
     eval_dataloader = torch.utils.data.DataLoader(
         eval_dataset,

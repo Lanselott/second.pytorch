@@ -53,6 +53,7 @@ def build(input_reader_config,
           voxel_generator,
           target_assigner=None,
           tracking=False,
+          batch=5,
           multi_workers=False,
           multi_gpu=False) -> DatasetWrapper:
     """Builds a tensor dictionary based on the InputReader config.
@@ -77,6 +78,7 @@ def build(input_reader_config,
         voxel_generator,
         target_assigner,
         tracking=tracking,
+        batch=batch,
         multi_workers=multi_workers,
         multi_gpu=multi_gpu)
     dataset = DatasetWrapper(dataset)
