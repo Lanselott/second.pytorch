@@ -399,7 +399,7 @@ def train(config_path,
                     train_example_list.append(train_sample)
                 example = merge_list_inputs(example)
                 example_2 = merge_list_inputs(example_2)
-                
+            
                 # Handle coordinates
                 # '''
                 # check sampler works correct
@@ -430,6 +430,7 @@ def train(config_path,
                 batch_size = example["anchors"].shape[0]
 
                 ret_dict = net_parallel([example_torch, example_2_torch])
+
                 # ret_dict = net_parallel(example_torch)
                 cls_preds = ret_dict["cls_preds"]
                 loss = ret_dict["loss"].mean()
@@ -441,7 +442,7 @@ def train(config_path,
                 cls_loss = ret_dict["cls_loss"]
                 
                 cared = ret_dict["cared"]
-                labels = example_torch["labels"]
+                labels = example_2_torch["labels"]
                 if train_cfg.enable_mixed_precision:
                     with amp.scale_loss(loss, amp_optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -461,10 +462,10 @@ def train(config_path,
                 metrics = {}
                 num_pos = int((labels > 0)[0].float().sum().cpu().numpy())
                 num_neg = int((labels == 0)[0].float().sum().cpu().numpy())
-                if 'anchors_mask' not in example_torch:
-                    num_anchors = example_torch['anchors'].shape[1]
+                if 'anchors_mask' not in example_2_torch:
+                    num_anchors = example_2_torch['anchors'].shape[1]
                 else:
-                    num_anchors = int(example_torch['anchors_mask'][0].sum())
+                    num_anchors = int(example_2_torch['anchors_mask'][0].sum())
                 global_step = net.get_global_step()
 
                 if global_step % display_step == 0:
@@ -494,7 +495,7 @@ def train(config_path,
                             dir_loss_reduced.detach().cpu().numpy())
 
                     metrics["misc"] = {
-                        "num_vox": int(example_torch["voxels"].shape[0]),
+                        "num_vox": int(example_2_torch["voxels"].shape[0]),
                         "num_pos": int(num_pos),
                         "num_neg": int(num_neg),
                         "num_anchors": int(num_anchors),

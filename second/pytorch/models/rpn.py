@@ -563,6 +563,7 @@ class RPNBase_tracking(RPNNoHeadBase):
                             dilation_patch=self._corr_dilation_patch)
         # print("corr time:{}".format(time.time() - t))
         warped_previous_out = self.resample(previous_out, offset_map)
+
         x = torch.cat([current_out, warped_previous_out], dim=1)
         box_preds = self.conv_box(x)
         cls_preds = self.conv_cls(x)
