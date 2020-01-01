@@ -399,7 +399,6 @@ def train(config_path,
                     train_example_list.append(train_sample)
                 example = merge_list_inputs(example)
                 example_2 = merge_list_inputs(example_2)
-            
                 # Handle coordinates
                 # '''
                 # check sampler works correct
@@ -419,9 +418,6 @@ def train(config_path,
                 # print("pair done")
                 # embed()
                 # done
-                '''
-                TODO: Handle correlation. warp masks, ...
-                '''
                 lr_scheduler.step(net.get_global_step())
                 time_metrics = example["metrics"]
                 example.pop("metrics")

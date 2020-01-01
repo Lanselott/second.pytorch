@@ -550,9 +550,6 @@ class RPNBase_tracking(RPNNoHeadBase):
             for loc in padding_locs:
                 current_offset_mask[:, loc[0] - padding_radius:loc[0] + padding_radius, loc[1] - padding_radius:loc[1] + padding_radius] = 1
             
-            # embed()
-            # import imageio
-            # imageio.imwrite("inference_offset_mask.png", current_offset_mask.reshape(200, 176).cpu().numpy())
         # t = time.time()
         corr_response = self.correlation_sampler(current_out, previous_out)
         offset_map = get_response_offset(corr_response, 
@@ -563,6 +560,7 @@ class RPNBase_tracking(RPNNoHeadBase):
                             dilation_patch=self._corr_dilation_patch)
         # print("corr time:{}".format(time.time() - t))
         warped_previous_out = self.resample(previous_out, offset_map)
+        warped_previous_out = torch.where(warped_previous_out != previous_out, warped_previous_out, current_out)
 
         x = torch.cat([current_out, warped_previous_out], dim=1)
         box_preds = self.conv_box(x)
