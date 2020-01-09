@@ -558,6 +558,10 @@ class RPNBase_tracking(RPNNoHeadBase):
                             voting_range=self._voting_range, 
                             dilation_patch=self._corr_dilation_patch)
         warped_previous_out = self.resample(previous_out, offset_map)
+        '''
+        TODO: Some new strategy here to further improve.
+        Voting/Multi correlation/....  
+        '''
         # warped_previous_out = torch.where(warped_previous_out != previous_out, warped_previous_out, current_out)
         # warped_previous_out = torch.zeros_like(current_out)
         x = torch.cat([current_out, warped_previous_out], dim=1)
