@@ -386,27 +386,28 @@ def train(config_path,
                     example = train_example_list[ :-1] 
                     example_2 = train_example_list[1: ]
                     # Handle scene change
-                    scene_inds = [exp['metadata'][0]['image_idx'][:4] for exp in example]
-                    scene_2_inds = [exp['metadata'][0]['image_idx'][:4] for exp in example_2]
-                    if scene_inds != scene_2_inds:
+                    scene_token = [exp['metadata'][0]['scene_token'] for exp in example]
+                    scene_token_2 = [exp['metadata'][0]['scene_token'] for exp in example_2]
+
+                    if scene_token != scene_token_2:
                         print("Scene change.")
                         # Overwrite directly 
                         example = example_2
                     for i in range(len(example)):
-                        example[i], example_2[i] = handle_frames(example[i], example_2[i], corr_size=model_cfg.rpn.corr_patch_size)
+                        example[i], example_2[i] = handle_frames(example[i], example_2[i], w_size=248, h_size=248, is_nuscene=True, corr_size=model_cfg.rpn.corr_patch_size)
                     # train_example_list.clear()
                     train_example_list = [train_example_list[-1]]
                     train_example_list.append(train_sample)
+
                 example = merge_list_inputs(example)
                 example_2 = merge_list_inputs(example_2)
-
                 # Handle coordinates
                 # '''
                 # check sampler works correct
                 # '''
                 # for i in range(train_batch - 1):
-                #     image1 = example['labels'][i].reshape(2, 200, 176)
-                #     image2 = example_2['labels'][i].reshape(2, 200, 176)
+                #     image1 = example['labels'][i].reshape(2, 248, 248)
+                #     image2 = example_2['labels'][i].reshape(2, 248, 248)
                 #     image1 = np.where(image1 < 0, 0, image1)
                 #     image2 = np.where(image2 < 0, 0, image2)
 
@@ -414,10 +415,9 @@ def train(config_path,
                 #     image2 = image2[0] + image2[1]
 
                 #     import imageio
-                #     imageio.imwrite("previous_frame_{}.png".format(i), image1)
+                #     imageio.imwrite('previous_frame_{}.png'.format(i), image1)
                 #     imageio.imwrite('current_frame_{}.png'.format(i), image2)
                 # print("pair done")
-                # embed()
                 # done
                 lr_scheduler.step(net.get_global_step())
                 time_metrics = example["metrics"]
@@ -540,7 +540,7 @@ def train(config_path,
                         example = merge_list_inputs(example)
                         example_2 = merge_list_inputs(example_2)
 
-                        if example['metadata'][0]['image_idx'] == '0000/000000':
+                        if example['metadata'][0]['scene_token'] == 'c3ab8ee2c1a54068a72d7eb4cf22e43d':
                             # First frame
                             example = example_convert_to_torch(example, float_dtype)
                             example_2 = example_convert_to_torch(example_2, float_dtype)
@@ -548,7 +548,7 @@ def train(config_path,
                             detections += net([example, example]) # First frame 0000/000000 and 0000/000000
                             detections += net([example, example_2]) # Second frame 0000/000000 and 0000/000001
 
-                        elif example['metadata'][0]['image_idx'][:4] != example_2['metadata'][0]['image_idx'][:4]:
+                        elif example['metadata'][0]['scene_token'][:4] != example_2['metadata'][0]['scene_token'][:4]:
                             # New scence
                             example_2 = example_convert_to_torch(example_2, float_dtype)
                             detections += net([example_2, example_2]) 
@@ -704,7 +704,7 @@ def evaluate(config_path,
             torch.cuda.synchronize()
             t1 = time.time()
 
-        if example['metadata'][0]['image_idx'] == '0000/000000':
+        if example['metadata'][0]['scene_token'] == 'c3ab8ee2c1a54068a72d7eb4cf22e43d':
             # First frame
             example = example_convert_to_torch(example, float_dtype)
             example_2 = example_convert_to_torch(example_2, float_dtype)
@@ -712,7 +712,7 @@ def evaluate(config_path,
                 detections += net([example, example]) # First frame 0000/000000 and 0000/000000
                 detections += net([example, example_2]) # Second frame 0000/000000 and 0000/000001
 
-        elif example['metadata'][0]['image_idx'][:4] != example_2['metadata'][0]['image_idx'][:4]:
+        elif example['metadata'][0]['scene_token'][:4] != example_2['metadata'][0]['scene_token'][:4]:
             # New scence
             example_2 = example_convert_to_torch(example_2, float_dtype)
             with torch.no_grad():

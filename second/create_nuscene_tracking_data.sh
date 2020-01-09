@@ -1,0 +1,1 @@
+python create_data.py nuscenes_data_prep --root-path="/research/byu2/rchen/data/nuscenes_1.0/trainval" --version="v1.0-trainval" --max_sweeps=10 --dataset-name="NuScenesDatasetD2"

@@ -514,7 +514,7 @@ class RPNBase_tracking(RPNNoHeadBase):
             patch_size=self._corr_patch_size,
             stride=1,
             # padding=1 + self._corr_kernel_size // 3,
-            padding=1,
+            padding=2,
             dilation_patch=self._corr_dilation_patch)
         self.resample = Resample2d()
         
@@ -538,7 +538,7 @@ class RPNBase_tracking(RPNNoHeadBase):
             Get offset mask according to original classifications
             Threshold: 0.8
             '''
-            padding_radius = 6
+            padding_radius = 5
             cls_threshold = 0.8
             # Inference
             warped_previous_out = torch.zeros(current_out.shape, device=current_out.device)
@@ -549,8 +549,7 @@ class RPNBase_tracking(RPNNoHeadBase):
             padding_locs = current_offset_mask.nonzero()[:, 1:]
             for loc in padding_locs:
                 current_offset_mask[:, loc[0] - padding_radius:loc[0] + padding_radius, loc[1] - padding_radius:loc[1] + padding_radius] = 1
-            
-        # t = time.time()
+        
         corr_response = self.correlation_sampler(current_out, previous_out)
         offset_map = get_response_offset(corr_response, 
                             offset_mask=current_offset_mask.reshape(w * h, -1), 
@@ -558,19 +557,22 @@ class RPNBase_tracking(RPNNoHeadBase):
                             kernel_size=self._corr_kernel_size, 
                             voting_range=self._voting_range, 
                             dilation_patch=self._corr_dilation_patch)
-        # print("corr time:{}".format(time.time() - t))
         warped_previous_out = self.resample(previous_out, offset_map)
-        warped_previous_out = torch.where(warped_previous_out != previous_out, warped_previous_out, current_out)
-
+        # warped_previous_out = torch.where(warped_previous_out != previous_out, warped_previous_out, current_out)
+        # warped_previous_out = torch.zeros_like(current_out)
         x = torch.cat([current_out, warped_previous_out], dim=1)
         box_preds = self.conv_box(x)
         cls_preds = self.conv_cls(x)
-        # ''' test '''
-        # n, c, h ,w = x.shape
+        # # ''' test '''  
         # import imageio
-        # imageio.imwrite("current_frame_features.png", x[0, :int(c/2)].sum(0).detach().reshape(h, w).cpu().numpy())
-        # imageio.imwrite("warped_current_frame_features.png", x[0, int(c/2):].sum(0).detach().reshape(h, w).cpu().numpy())
-        # imageio.imwrite("offset_map.png", offset_map[0].sum(0).detach().cpu().numpy())
+        # x_offset = offset_map[0, 0].cpu().numpy()
+        # y_offset = offset_map[0, 1].cpu().numpy()
+        # imageio.imwrite("offset_map_x.png", offset_map[0, 0].cpu().numpy())
+        # imageio.imwrite("offset_map_y.png", offset_map[0, 1].cpu().numpy())
+        # np.savetxt("offset_map_x.txt", x_offset, fmt='%i')
+        # np.savetxt("offset_map_y.txt", y_offset, fmt='%i')
+        # embed()
+        
         # [N, C, y(H), x(W)]
         C, H, W = box_preds.shape[1:]
         box_preds = box_preds.view(-1, self._num_anchor_per_loc,

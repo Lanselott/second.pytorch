@@ -5,23 +5,23 @@ import numpy as np
 import draw_tools
 import torch
 
-def handle_frames(previous_frame, current_frame):
+def handle_frames(previous_frame, current_frame, w_size=200, h_size=176, spatial_ratio=2.5, is_nuscene=False, corr_size=9):
     # prev_img_name = previous_frame['metadata'][0]['image_idx']
     # curr_img_name = current_frame['metadata'][0]['image_idx']
 
     rs = region_similarity.RotateIouSimilarity()
     prev_gt_boxes = previous_frame['gt_boxes']
     curr_gt_boxes = current_frame['gt_boxes']
+
     # [N, 5] [x,y,w,l,r]
     iou_list = rs.compare(curr_gt_boxes[:, (0,1,3,4,6)], prev_gt_boxes[:, (0,1,3,4,6)]) # shape: [N,M]
 
     # Parameters
-    iou_threshold = 0.33 # if iou >= threshold, we assume same car appears in both frames 
-    w_size = 200
-    h_size = 176
+    # if iou >= threshold, we assume same car appears in both frames
+    iou_threshold = 0.33 
+    coord_shift = w_size
     # box_per_loc = 2 # it should always be 2
 
-    corr_size = 9
     corr_ratio = corr_size//2 
     '''
     Generate offset / Masks
@@ -37,15 +37,15 @@ def handle_frames(previous_frame, current_frame):
     # Masks gt boxes in current frames (Rotations are considered)
     # sqrt_wl = np.sqrt(current_list[:,3]*current_list[:,3] + current_list[:,4]*current_list[:,4])/2
     # car_theta = np.arctan(current_list[:,3]/current_list[:,4]) # origin
-    cls_loc_in_tensor = current_list[:,0:2] #xy
+    cls_loc_in_tensor = current_list[:, 0:2] #xy
     # lw_in_tensor = np.flip(current_list[:,3:5],1) #lw
-    lw_in_tensor = current_list[:,3:5]
-    unrotated_right_top =  lw_in_tensor/2
-    unrotated_left_bottom = -lw_in_tensor/2
-    unrotated_left_top = lw_in_tensor/2
-    unrotated_right_bottom = -lw_in_tensor/2
-    unrotated_left_top[:,0]=  unrotated_left_top[:,0] - lw_in_tensor[:,0]
-    unrotated_right_bottom[:,0] =  unrotated_right_bottom[:,0] + lw_in_tensor[:,0]
+    lw_in_tensor = current_list[:, 3:5]
+    unrotated_right_top =  lw_in_tensor / 2
+    unrotated_left_bottom = -lw_in_tensor / 2
+    unrotated_left_top = lw_in_tensor / 2
+    unrotated_right_bottom = -lw_in_tensor / 2 
+    unrotated_left_top[:, 0]=  unrotated_left_top[:, 0] - lw_in_tensor[:, 0]
+    unrotated_right_bottom[:, 0] =  unrotated_right_bottom[:, 0] + lw_in_tensor[:, 0]
 
     theta = current_list[:,6] 
     # sum_theta = theta + car_theta #rotated
@@ -63,10 +63,10 @@ def handle_frames(previous_frame, current_frame):
         rotated_coord[i, 2, :] = unrotated_right_bottom[i, :] @ rot_mat_T[..., i]
         rotated_coord[i, 3, :] = unrotated_left_top[i, :] @ rot_mat_T[..., i]
 
-    rotated_coord[:, 0, :] = ((cls_loc_in_tensor + rotated_coord[:, 0, :]) * 2.5).round() 
-    rotated_coord[:, 1, :] = ((cls_loc_in_tensor + rotated_coord[:, 1, :]) * 2.5).round()
-    rotated_coord[:, 2, :] = ((cls_loc_in_tensor + rotated_coord[:, 2, :]) * 2.5).round() 
-    rotated_coord[:, 3, :] = ((cls_loc_in_tensor + rotated_coord[:, 3, :]) * 2.5).round()
+    rotated_coord[:, 0, :] = ((cls_loc_in_tensor + rotated_coord[:, 0, :]) * spatial_ratio).round() 
+    rotated_coord[:, 1, :] = ((cls_loc_in_tensor + rotated_coord[:, 1, :]) * spatial_ratio).round()
+    rotated_coord[:, 2, :] = ((cls_loc_in_tensor + rotated_coord[:, 2, :]) * spatial_ratio).round() 
+    rotated_coord[:, 3, :] = ((cls_loc_in_tensor + rotated_coord[:, 3, :]) * spatial_ratio).round()
 
     mask_coordinates = np.ndarray([num_of_boxes,4],dtype=int) #[num, (x_min,y_min,x_max,y_max)], shape [num,(x,y)]
 
@@ -77,8 +77,8 @@ def handle_frames(previous_frame, current_frame):
     mask_coordinates[:, 3] = np.amax(rotated_coord[..., 1],axis=1) 
     
     # Get gt offsets
-    offset_x_list = ((-((current_list[:,0] -previous_list[:,0]) * 2.5).round() + corr_ratio ) * 2 + 1) / corr_size - 1
-    offset_y_list = ((((current_list[:,1] -previous_list[:,1]) * 2.5).round() + corr_ratio ) * 2 + 1) / corr_size - 1
+    offset_x_list = ((-((current_list[:,0] -previous_list[:,0]) * spatial_ratio).round() + corr_ratio ) * 2 + 1) / corr_size - 1
+    offset_y_list = ((((current_list[:,1] -previous_list[:,1]) * spatial_ratio).round() + corr_ratio ) * 2 + 1) / corr_size - 1
 
     gt_offset[..., 0] = offset_x_list
     gt_offset[..., 1] = offset_y_list
@@ -91,9 +91,12 @@ def handle_frames(previous_frame, current_frame):
     offset_targets = -np.ones([w_size,h_size,2],
                     dtype=current_frame['reg_targets'].dtype)
     # Coordinate shifts
-    mask_coordinates[:,1] = mask_coordinates[:,1] + 100
-    mask_coordinates[:,3] = mask_coordinates[:,3] + 100
-
+    mask_coordinates[:,1] = mask_coordinates[:,1] + coord_shift / 2
+    mask_coordinates[:,3] = mask_coordinates[:,3] + coord_shift / 2
+    
+    if is_nuscene:
+        mask_coordinates[:,2] = mask_coordinates[:,2] + coord_shift / 2
+        mask_coordinates[:,0] = mask_coordinates[:,0] + coord_shift / 2
 
     for k in range(num_of_boxes):
         offset_targets[mask_coordinates[k,1]:mask_coordinates[k,3],mask_coordinates[k,0]:mask_coordinates[k,2],:] = gt_offset[k]

@@ -17,7 +17,7 @@ from second.data.dataset import Dataset, register_dataset
 from second.utils.eval import get_coco_eval_result, get_official_eval_result
 from second.utils.progress_bar import progress_bar_iter as prog_bar
 from second.utils.timer import simple_timer
-
+from IPython import embed
 
 @register_dataset
 class NuScenesDataset(Dataset):
@@ -159,7 +159,8 @@ class NuScenesDataset(Dataset):
                 "points": None,
             },
             "metadata": {
-                "token": info["token"]
+                "token": info["token"],
+                "scene_token": info["scene_token"],
             },
         }
         lidar_path = Path(info['lidar_path'])
@@ -625,6 +626,7 @@ def _fill_trainval_infos(nusc,
             "ego2global_translation": pose_record['translation'],
             "ego2global_rotation": pose_record['rotation'],
             "timestamp": sample["timestamp"],
+            "scene_token": sample["scene_token"], # tracking usage 
         }
 
         l2e_r = info["lidar2ego_rotation"]
