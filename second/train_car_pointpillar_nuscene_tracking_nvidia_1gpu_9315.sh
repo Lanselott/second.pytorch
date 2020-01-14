@@ -1,0 +1,1 @@
+python ./pytorch/train_nuscene_multi_frame.py train --config_path=./configs/pointpillars/car/xyres_20_nuscene_tracking_nvidia_1gpu_9315.config --model_dir=./results/car_pointpillar_nuscene_tracking_1gpu_9315 --resume=True
