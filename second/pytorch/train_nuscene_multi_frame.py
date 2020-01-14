@@ -388,7 +388,6 @@ def train(config_path,
                     # Handle scene change
                     scene_token = [exp['metadata'][0]['scene_token'] for exp in example]
                     scene_token_2 = [exp['metadata'][0]['scene_token'] for exp in example_2]
-                    embed()
                     if scene_token != scene_token_2:
                         print("Scene change.")
                         # Overwrite directly 
