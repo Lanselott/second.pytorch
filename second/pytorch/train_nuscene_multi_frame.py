@@ -389,7 +389,7 @@ def train(config_path,
                     scene_token = [exp['metadata'][0]['scene_token'] for exp in example]
                     scene_token_2 = [exp['metadata'][0]['scene_token'] for exp in example_2]
                     if scene_token != scene_token_2:
-                        print("Scene change.")
+                        # print("Scene change.")
                         # Overwrite directly 
                         example = example_2
                     for i in range(len(example)):
